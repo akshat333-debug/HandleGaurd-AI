@@ -90,6 +90,8 @@ class HandleGuardPipeline:
         *,
         frame_height: float = 720,
     ) -> PipelineResult:
+        if timestamps:
+            self.engine.video_duration = max(timestamps) + (timestamps[1] - timestamps[0] if len(timestamps) > 1 else 0.125)
         for ts in timestamps:
             self.process_frame(None, ts, frame_height=frame_height)
         return PipelineResult(

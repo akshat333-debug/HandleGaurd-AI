@@ -81,3 +81,6 @@ def test_incident_engine_assigns_ids():
     first = engine.ingest(evidence, product_class="carton")
     assert first is not None
     assert first.incident_id.startswith("HG-")
+    assert first.clip_path is not None
+    assert first.clip_path.endswith(".mp4")
+    assert "incident_" in first.clip_path
