@@ -1,0 +1,107 @@
+drop:
+  enabled: true
+  min_fall_pixels: 45
+  min_downward_velocity: 80
+  impact_deceleration: 120
+  cooldown_seconds: 4
+  base_risk: 70
+  behaviour_severity: 0.80
+
+throw:
+  enabled: true
+  min_horizontal_velocity: 120
+  min_unsupported_frames: 2
+  cooldown_seconds: 4
+  base_risk: 75
+  behaviour_severity: 0.85
+
+drag:
+  enabled: true
+  min_distance_pixels: 100
+  max_vertical_variation: 25
+  min_duration_seconds: 1.5
+  floor_proximity_px: 30
+  cooldown_seconds: 3
+  base_risk: 50
+  behaviour_severity: 0.55
+
+rough_handling:
+  enabled: true
+  min_acceleration: 400
+  min_deceleration: 350
+  cooldown_seconds: 3
+  base_risk: 65
+  behaviour_severity: 0.70
+
+improper_stack:
+  enabled: true
+  min_horizontal_overlap: 0.40
+  size_ratio: 1.15
+  cooldown_seconds: 8
+  base_risk: 55
+  behaviour_severity: 0.60
+
+unstable_stack:
+  enabled: true
+  min_support_ratio: 0.55
+  min_horizontal_overlap: 0.30
+  cooldown_seconds: 10
+  base_risk: 70
+  behaviour_severity: 0.75
+
+zone_violation:
+  enabled: true
+  min_duration_seconds: 2.0
+  cooldown_seconds: 6
+  base_risk: 45
+  behaviour_severity: 0.50
+
+pallet_overhang:
+  enabled: true
+  min_support_fraction: 0.70
+  cooldown_seconds: 8
+  base_risk: 60
+  behaviour_severity: 0.65
+
+stepping:
+  enabled: true
+  min_duration_seconds: 0.6
+  cooldown_seconds: 5
+  base_risk: 80
+  behaviour_severity: 0.85
+
+improper_manual_handling:
+  enabled: true
+  large_area_px: 12000
+  max_nearby_people: 1
+  equipment_proximity_px: 180
+  cooldown_seconds: 6
+  base_risk: 60
+  behaviour_severity: 0.65
+
+unsafe_sequence:
+  enabled: true
+  cooldown_seconds: 8
+  base_risk: 55
+  behaviour_severity: 0.60
+
+unsafe_surface:
+  enabled: true
+  min_duration_seconds: 1.0
+  cooldown_seconds: 6
+  base_risk: 50
+  behaviour_severity: 0.55
+
+dedup:
+  drop: 4
+  throw: 4
+  drag: 3
+  rough_handling: 3
+  improper_stack: 8
+  unstable_stack: 10
+  zone_violation: 6
+  pallet_overhang: 8
+  stepping: 5
+  improper_manual_handling: 6
+  unsafe_sequence: 8
+  unsafe_surface: 6

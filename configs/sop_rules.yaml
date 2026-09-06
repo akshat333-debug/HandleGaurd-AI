@@ -1,0 +1,74 @@
+drop:
+  rule_text: >
+    Products must remain in controlled support during loading and unloading.
+    Rapid unsupported descent followed by impact is a handling failure.
+  recommendation: >
+    Inspect the product for visible damage and review the unloading
+    technique. Use controlled placement and appropriate handling equipment.
+
+throw:
+  rule_text: >
+    Products must not be thrown or tossed. Transfer must be a controlled hand-off or mechanical move.
+  recommendation: >
+    Stop toss-style transfers. Use two-person handling or a conveyor/trolley for the remaining load.
+
+drag:
+  rule_text: >
+    Products must not be dragged across the floor. Use approved material-handling equipment.
+  recommendation: >
+    Move the product using a trolley, pallet truck, or approved handling
+    device instead of dragging it across the floor.
+
+rough_handling:
+  rule_text: >
+    Placement and transfer must avoid abrupt impacts and high acceleration.
+  recommendation: >
+    Slow the transfer, lower the last 20 cm under control, and check adjacent cartons for impact marks.
+
+improper_stack:
+  rule_text: >
+    Heavier or larger items must not rest on smaller or lighter items.
+  recommendation: >
+    Restack with the larger/heavier carton at the base. Recheck stack geometry before moving the pallet.
+
+unstable_stack:
+  rule_text: >
+    Stacks must have adequate inter-tier overlap and a stable support ratio.
+  recommendation: >
+    Rebuild the stack so upper cartons sit fully on the lower footprint. Do not move the pallet until stable.
+
+zone_violation:
+  rule_text: >
+    Products and pallets must remain inside designated staging and loading zones.
+  recommendation: >
+    Relocate the product into the designated zone and review bay markings with the shift supervisor.
+
+pallet_overhang:
+  rule_text: >
+    Product footprint must be adequately supported by the pallet with limited overhang.
+  recommendation: >
+    Recentre the load on the pallet. Stretch-wrap or restack if overhang remains above the configured limit.
+
+stepping:
+  rule_text: >
+    Personnel must not stand or step on product. Use approved platforms or equipment.
+  recommendation: >
+    Stop the activity, inspect the carton, and provide a stable work platform or mechanical aid.
+
+improper_manual_handling:
+  rule_text: >
+    Large or heavy items require team lift or mechanical assistance.
+  recommendation: >
+    Pause the lift. Assign a second handler or use a pallet jack/trolley before continuing.
+
+unsafe_sequence:
+  rule_text: >
+    Loading and unloading must follow the approved SOP sequence.
+  recommendation: >
+    Reset the sequence: stage the product, bring approved equipment, then lift, move, place, and verify stability.
+
+unsafe_surface:
+  rule_text: >
+    Product must not be moved across wet or otherwise unsafe floor zones.
+  recommendation: >
+    Isolate the wet zone, dry or cone it off, and reroute the product through a dry path.
