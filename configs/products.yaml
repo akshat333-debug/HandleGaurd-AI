@@ -1,0 +1,34 @@
+products:
+  default:
+    fragility: 0.4
+    large: false
+  carton:
+    fragility: 0.45
+    large: false
+  electronics:
+    fragility: 0.9
+    large: false
+  mattress:
+    fragility: 0.5
+    large: true
+  glass:
+    fragility: 1.0
+    large: false
+  pallet:
+    fragility: 0.2
+    large: true
+  box:
+    fragility: 0.45
+    large: false
+  person:
+    fragility: 0.0
+    large: false
+  forklift:
+    fragility: 0.1
+    large: true
+  trolley:
+    fragility: 0.1
+    large: false
+  pallet_jack:
+    fragility: 0.1
+    large: false

@@ -2,3 +2,17 @@
 .DS_Store
 node_modules/
 .env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+*.egg-info/
+data/raw/
+data/clips/
+data/processed/
+data/*.db
+apps/web/dist/
+artifacts/

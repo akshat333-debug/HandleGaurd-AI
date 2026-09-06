@@ -1,0 +1,16 @@
+video:
+  inference_fps: 8
+  display_fps: 24
+  max_resolution: [1280, 720]
+  max_upload_mb: 200
+  allowed_extensions: [".mp4", ".avi", ".mov", ".mkv"]
+
+privacy:
+  retain_full_video_days: 7
+  retain_incident_clips_days: 30
+  blur_faces: true
+  store_worker_identity: false
+
+clips:
+  pre_event_buffer: 3
+  post_event_buffer: 4

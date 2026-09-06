@@ -1,0 +1,20 @@
+weights:
+  behaviour_severity: 0.35
+  intensity: 0.20
+  product_fragility: 0.15
+  duration: 0.10
+  repeat_frequency: 0.10
+  location_risk: 0.10
+
+bands:
+  low: [0, 24]
+  medium: [25, 49]
+  high: [50, 74]
+  critical: [75, 100]
+
+location_risk:
+  allowed: 0.20
+  restricted_product: 0.55
+  restricted: 0.85
+  unsafe_surface: 0.80
+  unknown: 0.30

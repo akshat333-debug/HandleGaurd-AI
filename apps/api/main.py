@@ -1,0 +1,403 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
+
+from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+
+from apps.api.schemas import (
+    AssistantOut,
+    AssistantQuery,
+    IncidentOut,
+    IncidentPatch,
+    VideoCreate,
+    VideoOut,
+    ZoneIn,
+    ZoneOut,
+)
+from handleguard.assistant.service import AssistantService
+from handleguard.config.loader import load_config
+from handleguard.db.models import IncidentRow, VideoRow, ZoneRow
+from handleguard.db.repositories import (
+    analytics_summary,
+    delete_zone,
+    get_incident,
+    get_video,
+    list_incidents,
+    list_videos,
+    list_zones,
+    patch_incident,
+    save_incident,
+    save_video,
+    upsert_zone,
+)
+from handleguard.db.session import get_session, init_db
+from handleguard.demo import DEMO_TIMELINE, demo_timestamps
+from handleguard.pipeline import HandleGuardPipeline
+from handleguard.types import Incident, IncidentStatus, RiskLevel
+
+CONFIG = load_config()
+UPLOAD_DIR = Path(__file__).resolve().parents[2] / "data" / "raw"
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_db()
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    yield
+
+
+APP = FastAPI(title="HandleGuard AI", version="0.1.0", lifespan=lifespan)
+APP.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+def db_session() -> Session:
+    session = get_session()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+def _incident_out(row: IncidentRow) -> IncidentOut:
+    try:
+        evidence = json.loads(row.evidence_json or "{}")
+    except json.JSONDecodeError:
+        evidence = {}
+    return IncidentOut(
+        id=row.id,
+        video_id=row.video_id,
+        behaviour=row.behaviour,
+        risk_score=row.risk_score,
+        risk_level=row.risk_level,
+        confidence=row.confidence,
+        start_time=row.start_time,
+        end_time=row.end_time,
+        zone=row.zone,
+        evidence=evidence,
+        explanation=row.explanation,
+        recommendation=row.recommendation,
+        review_status=row.review_status,
+        camera_id=row.camera_id,
+        loading_bay=row.loading_bay,
+        primary_object_track=row.primary_object_track,
+        actor_track=row.actor_track,
+        supervisor_note=row.supervisor_note,
+        clip_path=row.clip_path,
+        created_at=row.created_at,
+    )
+
+
+def _video_out(row: VideoRow) -> VideoOut:
+    return VideoOut(
+        id=row.id,
+        filename=row.filename,
+        source_type=row.source_type,
+        duration=row.duration,
+        fps=row.fps,
+        width=row.width,
+        height=row.height,
+        camera_id=row.camera_id,
+        loading_bay=row.loading_bay,
+        status=row.status,
+        created_at=row.created_at,
+    )
+
+
+def _row_to_incident(row: IncidentRow) -> Incident:
+    try:
+        evidence = json.loads(row.evidence_json or "{}")
+    except json.JSONDecodeError:
+        evidence = {}
+    return Incident(
+        incident_id=row.id,
+        video_id=row.video_id,
+        behaviour=row.behaviour,
+        risk_score=row.risk_score,
+        risk_level=RiskLevel(row.risk_level),
+        confidence=row.confidence,
+        start_time=row.start_time,
+        end_time=row.end_time,
+        primary_object_track=row.primary_object_track,
+        actor_track=row.actor_track,
+        equipment_track=None,
+        zone=row.zone,
+        evidence=evidence,
+        explanation=row.explanation,
+        recommendation=row.recommendation,
+        status=IncidentStatus(row.review_status),
+        camera_id=row.camera_id,
+        loading_bay=row.loading_bay,
+        clip_path=row.clip_path,
+        thumbnail_path=row.thumbnail_path,
+        supervisor_note=row.supervisor_note,
+    )
+
+
+@APP.get("/api/health")
+def health() -> dict[str, str]:
+    return {"status": "ok", "service": "handleguard-ai"}
+
+
+@APP.post("/api/videos", response_model=VideoOut)
+def create_video(payload: VideoCreate, session: Session = Depends(db_session)) -> VideoOut:
+    video_id = f"vid-{uuid4().hex[:8]}"
+    row = save_video(
+        session,
+        video_id=video_id,
+        filename=payload.filename,
+        source_type=payload.source_type,
+        camera_id=payload.camera_id,
+        loading_bay=payload.loading_bay,
+        status="uploaded",
+    )
+    return _video_out(row)
+
+
+@APP.post("/api/videos/upload", response_model=VideoOut)
+async def upload_video(
+    file: UploadFile = File(...),
+    loading_bay: str = Query("Bay-A"),
+    camera_id: str = Query("cam-01"),
+    session: Session = Depends(db_session),
+) -> VideoOut:
+    suffix = Path(file.filename or "upload.mp4").suffix.lower()
+    allowed = set(CONFIG.video.get("video", {}).get("allowed_extensions", [".mp4", ".avi", ".mov", ".mkv"]))
+    if suffix not in allowed:
+        raise HTTPException(status_code=400, detail="Unsupported video type")
+    video_id = f"vid-{uuid4().hex[:8]}"
+    dest = UPLOAD_DIR / f"{video_id}{suffix}"
+    dest.write_bytes(await file.read())
+    row = save_video(
+        session,
+        video_id=video_id,
+        filename=file.filename or dest.name,
+        source_type="upload",
+        camera_id=camera_id,
+        loading_bay=loading_bay,
+        status="uploaded",
+    )
+    return _video_out(row)
+
+
+@APP.get("/api/videos", response_model=list[VideoOut])
+def videos(session: Session = Depends(db_session)) -> list[VideoOut]:
+    return [_video_out(row) for row in list_videos(session)]
+
+
+@APP.get("/api/videos/{video_id}", response_model=VideoOut)
+def video_detail(video_id: str, session: Session = Depends(db_session)) -> VideoOut:
+    row = get_video(session, video_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Video not found")
+    return _video_out(row)
+
+
+@APP.post("/api/videos/{video_id}/process", response_model=list[IncidentOut])
+def process_video(video_id: str, session: Session = Depends(db_session)) -> list[IncidentOut]:
+    row = get_video(session, video_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Video not found")
+    pipeline = HandleGuardPipeline.from_stub(DEMO_TIMELINE, config=CONFIG, video_id=video_id)
+    pipeline.camera_id = row.camera_id
+    pipeline.loading_bay = row.loading_bay
+    result = pipeline.process_timeline(demo_timestamps())
+    saved = []
+    for incident in result.incidents:
+        saved.append(save_incident(session, incident))
+    row.status = "processed"
+    session.commit()
+    return [_incident_out(item) for item in saved]
+
+
+@APP.get("/api/incidents", response_model=list[IncidentOut])
+def incidents(
+    behaviour: str | None = None,
+    risk_level: str | None = None,
+    status: str | None = None,
+    video_id: str | None = None,
+    session: Session = Depends(db_session),
+) -> list[IncidentOut]:
+    rows = list_incidents(
+        session,
+        behaviour=behaviour,
+        risk_level=risk_level,
+        status=status,
+        video_id=video_id,
+    )
+    return [_incident_out(row) for row in rows]
+
+
+@APP.get("/api/incidents/{incident_id}", response_model=IncidentOut)
+def incident_detail(incident_id: str, session: Session = Depends(db_session)) -> IncidentOut:
+    row = get_incident(session, incident_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    return _incident_out(row)
+
+
+@APP.patch("/api/incidents/{incident_id}", response_model=IncidentOut)
+def incident_patch(
+    incident_id: str,
+    payload: IncidentPatch,
+    session: Session = Depends(db_session),
+) -> IncidentOut:
+    row = patch_incident(
+        session,
+        incident_id,
+        review_status=payload.review_status,
+        supervisor_note=payload.supervisor_note,
+        risk_level=payload.risk_level,
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    return _incident_out(row)
+
+
+@APP.get("/api/incidents/{incident_id}/clip")
+def incident_clip(incident_id: str, session: Session = Depends(db_session)) -> dict[str, Any]:
+    row = get_incident(session, incident_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    return {
+        "incident_id": row.id,
+        "clip_path": row.clip_path,
+        "start_time": max(0.0, row.start_time - 3),
+        "end_time": row.end_time + 4,
+        "message": "Clip metadata ready. Bind a media encoder in production.",
+    }
+
+
+@APP.get("/api/analytics/summary")
+def analytics(session: Session = Depends(db_session)) -> dict[str, Any]:
+    return analytics_summary(session)
+
+
+@APP.get("/api/analytics/behaviours")
+def analytics_behaviours(session: Session = Depends(db_session)) -> dict[str, int]:
+    return analytics_summary(session)["by_behaviour"]
+
+
+@APP.get("/api/analytics/risk")
+def analytics_risk(session: Session = Depends(db_session)) -> dict[str, int]:
+    return analytics_summary(session)["by_level"]
+
+
+@APP.get("/api/analytics/bays")
+def analytics_bays(session: Session = Depends(db_session)) -> dict[str, int]:
+    return analytics_summary(session)["by_bay"]
+
+
+@APP.post("/api/assistant/query", response_model=AssistantOut)
+def assistant_query(payload: AssistantQuery, session: Session = Depends(db_session)) -> AssistantOut:
+    service = AssistantService(
+        CONFIG,
+        lambda: [_row_to_incident(row) for row in list_incidents(session)],
+    )
+    reply = service.query(payload.question)
+    return AssistantOut(
+        answer=reply.answer,
+        citations=reply.citations,
+        blocked=reply.blocked,
+        intent=reply.intent,
+    )
+
+
+@APP.get("/api/config/behaviours")
+def get_behaviours() -> dict[str, Any]:
+    return CONFIG.behaviours
+
+
+@APP.patch("/api/config/behaviours")
+def patch_behaviours(payload: dict[str, Any]) -> dict[str, Any]:
+    for key, value in payload.items():
+        if key in CONFIG.behaviours and isinstance(CONFIG.behaviours[key], dict) and isinstance(value, dict):
+            CONFIG.behaviours[key].update(value)
+    return CONFIG.behaviours
+
+
+@APP.get("/api/zones", response_model=list[ZoneOut])
+def zones(session: Session = Depends(db_session)) -> list[ZoneOut]:
+    rows = list_zones(session)
+    if rows:
+        return [
+            ZoneOut(
+                id=row.id,
+                name=row.name,
+                camera_id=row.camera_id,
+                polygon=json.loads(row.polygon_json),
+                zone_type=row.zone_type,
+            )
+            for row in rows
+        ]
+    fallback = []
+    for idx, item in enumerate(CONFIG.zones.get("zones", []), start=1):
+        fallback.append(
+            ZoneOut(
+                id=idx,
+                name=item["name"],
+                camera_id=item.get("camera_id", "cam-01"),
+                polygon=item["polygon"],
+                zone_type=item["type"],
+            )
+        )
+    return fallback
+
+
+@APP.post("/api/zones", response_model=ZoneOut)
+def create_zone(payload: ZoneIn, session: Session = Depends(db_session)) -> ZoneOut:
+    row = upsert_zone(
+        session,
+        name=payload.name,
+        camera_id=payload.camera_id,
+        polygon_json=json.dumps(payload.polygon),
+        zone_type=payload.zone_type,
+    )
+    return ZoneOut(
+        id=row.id,
+        name=row.name,
+        camera_id=row.camera_id,
+        polygon=json.loads(row.polygon_json),
+        zone_type=row.zone_type,
+    )
+
+
+@APP.patch("/api/zones/{zone_id}", response_model=ZoneOut)
+def update_zone(zone_id: int, payload: ZoneIn, session: Session = Depends(db_session)) -> ZoneOut:
+    row = upsert_zone(
+        session,
+        name=payload.name,
+        camera_id=payload.camera_id,
+        polygon_json=json.dumps(payload.polygon),
+        zone_type=payload.zone_type,
+        zone_id=zone_id,
+    )
+    return ZoneOut(
+        id=row.id,
+        name=row.name,
+        camera_id=row.camera_id,
+        polygon=json.loads(row.polygon_json),
+        zone_type=row.zone_type,
+    )
+
+
+@APP.delete("/api/zones/{zone_id}")
+def remove_zone(zone_id: int, session: Session = Depends(db_session)) -> dict[str, bool]:
+    if not delete_zone(session, zone_id):
+        raise HTTPException(status_code=404, detail="Zone not found")
+    return {"ok": True}
+
+
+app = APP

@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #64748b;
+  --color-accent: #ea580c;
+  --color-background: #f8fafc;
+  --color-foreground: #334155;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+*:focus-visible {
+  outline: 3px solid #ea580c;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
