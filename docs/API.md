@@ -5,6 +5,7 @@ Base path: `/api`
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/health` | Liveness |
+| GET | `/camera/guidance` | Fixed-camera capture rules + webcam stub |
 | POST | `/videos` | Register video metadata |
 | POST | `/videos/upload` | Upload file |
 | GET | `/videos` | List |

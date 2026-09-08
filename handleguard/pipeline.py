@@ -10,6 +10,7 @@ from handleguard.features.zones import load_zones, resolve_zone
 from handleguard.incidents.manager import IncidentEngine
 from handleguard.perception.detector import Detector, StubDetector
 from handleguard.perception.products import classify_product
+from handleguard.pipeline_errors import EmptyDetectionsError
 from handleguard.privacy.blur import blur_faces
 from handleguard.tracking.passthrough import FrameLocalTracker
 from handleguard.tracking.tracker import IoUTracker
@@ -104,11 +105,18 @@ class HandleGuardPipeline:
         timestamps: list[float],
         *,
         frame_height: float = 720,
+        require_detections: bool = False,
     ) -> PipelineResult:
         if timestamps:
             self.engine.video_duration = max(timestamps) + (timestamps[1] - timestamps[0] if len(timestamps) > 1 else 0.125)
+        saw_detections = False
         for ts in timestamps:
+            detections = self.detector.detect(None, ts)
+            if detections:
+                saw_detections = True
             self.process_frame(None, ts, frame_height=frame_height)
+        if require_detections and not saw_detections:
+            raise EmptyDetectionsError(self.video_id)
         return PipelineResult(
             video_id=self.video_id,
             tracks=self.tracker.tracks(),

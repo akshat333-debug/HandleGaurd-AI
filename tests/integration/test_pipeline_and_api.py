@@ -131,6 +131,11 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert "drop" in cards.json()
     assert cards.json()["drop"]["calibration_status"]
 
+    cam = client.get("/api/camera/guidance")
+    assert cam.status_code == 200
+    assert any("fixed" in rule.lower() for rule in cam.json()["rules"])
+    assert cam.json()["webcam"]["live"] is True
+
     zones = client.get("/api/zones")
     assert zones.status_code == 200
     assert len(zones.json()) >= 1

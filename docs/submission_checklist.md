@@ -25,3 +25,6 @@
 - [x] Behaviour annotation JSON parse/serialize
 - [x] Behaviour model cards and product-class aliases
 - [x] Image-space drop calibration (never claims uncalibrated metres)
+- [x] Camera guidance (fixed, 720p, no fisheye)
+- [x] Empty-detection error when `require_detections=True`
+- [x] Webcam source stub (unbound; tests never open a device)

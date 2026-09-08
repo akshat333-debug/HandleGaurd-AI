@@ -59,4 +59,9 @@
 24. Product-class aliases (`box`→`carton`, `pallet_truck`→`pallet_jack`)
 25. Behaviour model cards + labelled image-space calibration
 
+### Batch I — Camera + empty video (P1) — done
+26. Camera guidance document/API
+27. Empty detections raise `EmptyDetectionsError`
+28. WebcamSource stub (not bound in tests)
+
 ---
