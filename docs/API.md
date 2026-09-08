@@ -5,13 +5,14 @@ Base path: `/api`
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/health` | Liveness |
-| GET | `/camera/guidance` | Fixed-camera capture rules + webcam stub |
+| GET | `/camera/guidance` | Fixed-camera capture rules + webcam/RTSP stubs |
+| GET | `/demo/annotations` | Deterministic demo behaviour JSON pack |
 | POST | `/videos` | Register video metadata |
 | POST | `/videos/upload` | Upload file |
 | GET | `/videos` | List |
 | GET | `/videos/{id}` | Detail |
 | POST | `/videos/{id}/process` | Run pipeline |
-| GET | `/incidents` | Filterable list (`behaviour`, `risk_level`, `status`, `loading_bay`, `start`, `end`) |
+| GET | `/incidents` | Filterable list (`behaviour`, `risk_level`, `status`, `loading_bay`, `camera_id`, `start`, `end`) |
 | GET | `/incidents/{id}` | Detail |
 | PATCH | `/incidents/{id}` | Review workflow |
 | GET | `/incidents/{id}/clip` | Clip metadata |

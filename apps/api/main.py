@@ -34,6 +34,7 @@ from handleguard.db.repositories import (
     list_incidents,
     list_videos,
     list_zones,
+    review_response_pairs,
     patch_incident,
     save_incident,
     save_video,
@@ -49,7 +50,8 @@ from handleguard.metrics.behaviour import EventInterval
 from handleguard.metrics.error_cards import error_card
 from handleguard.metrics.feedback import ReviewLabel, feedback_metrics
 from handleguard.metrics.impact import estimated_avoided_loss
-from handleguard.metrics.kpis import shift_kpis
+from handleguard.demo_pack import demo_annotation_pack
+from handleguard.metrics.kpis import mean_response_seconds, shift_kpis
 from handleguard.video.camera import camera_guidance
 from handleguard.video.clip_writer import write_clip_sidecar
 from handleguard.incidents.clips import plan_clip
@@ -188,6 +190,11 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "handleguard-ai"}
 
 
+@APP.get("/api/demo/annotations")
+def demo_annotations() -> dict[str, object]:
+    return demo_annotation_pack()
+
+
 @APP.get("/api/camera/guidance")
 def camera_guide() -> dict[str, object]:
     guide = camera_guidance()
@@ -300,6 +307,7 @@ def incidents(
     loading_bay: str | None = None,
     start: str | None = None,
     end: str | None = None,
+    camera_id: str | None = None,
     session: Session = Depends(db_session),
 ) -> list[IncidentOut]:
     start_dt = datetime.fromisoformat(start) if start else None
@@ -313,6 +321,7 @@ def incidents(
         loading_bay=loading_bay,
         start=start_dt,
         end=end_dt,
+        camera_id=camera_id,
     )
     return [_incident_out(row) for row in rows]
 
@@ -398,7 +407,7 @@ def analytics_shift(session: Session = Depends(db_session)) -> dict[str, Any]:
         false_positives=by_status.get("FALSE_POSITIVE", 0),
         confirmed=by_status.get("CONFIRMED", 0),
         handling_actions=max(summary["total"], 1),
-        mean_response_s=0.0,
+        mean_response_s=mean_response_seconds(review_response_pairs(session)),
     )
     return {
         "high_risk_events": report.high_risk_events,

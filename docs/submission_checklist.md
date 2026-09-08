@@ -32,3 +32,5 @@
 - [x] Shift KPIs: high-risk per 100 actions, false-positive rate
 - [x] Model cards for all 12 behaviours
 - [x] RTSP source stub (unbound; tests never open a socket)
+- [x] Mean supervisor response time from first review
+- [x] Deterministic demo annotation pack (`GET /api/demo/annotations`)

@@ -148,6 +148,12 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert shift.status_code == 200
     assert "primary_kpi" in shift.json()
     assert "high_risk_per_100" in shift.json()
+    assert "mean_response_s" in shift.json()
+
+    demo = client.get("/api/demo/annotations")
+    assert demo.status_code == 200
+    assert demo.json()["video_id"] == "demo"
+    assert len(demo.json()["events"]) >= 8
 
     zones = client.get("/api/zones")
     assert zones.status_code == 200

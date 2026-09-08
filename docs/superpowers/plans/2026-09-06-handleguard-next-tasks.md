@@ -73,4 +73,9 @@
 32. RtspSource stub (not bound in tests)
 33. Dashboard shift KPI panel
 
+### Batch L — Response time + demo pack (P1) — done
+34. Mean response seconds from incident→first review
+35. Filter incidents by camera_id
+36. Deterministic demo annotation JSON pack
+
 ---

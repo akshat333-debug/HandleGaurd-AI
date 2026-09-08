@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -10,6 +11,15 @@ class ShiftKpis:
     high_risk_per_100: float
     mean_response_s: float
     primary_kpi: str
+
+
+def mean_response_seconds(pairs: list[tuple[datetime, datetime]]) -> float:
+    if not pairs:
+        return 0.0
+    total = 0.0
+    for created, reviewed in pairs:
+        total += (reviewed - created).total_seconds()
+    return round(total / len(pairs), 3)
 
 
 def high_risk_per_100(high_risk_events: int, handling_actions: int) -> float:

@@ -37,6 +37,7 @@ __all__ = [
     "evaluate_events",
     "feedback_metrics",
     "high_risk_per_100",
+    "mean_response_seconds",
     "incidents_to_events",
     "leakage_safe_split",
     "mean_average_precision",

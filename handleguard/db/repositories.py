@@ -84,6 +84,7 @@ def list_incidents(
     loading_bay: str | None = None,
     start: datetime | None = None,
     end: datetime | None = None,
+    camera_id: str | None = None,
 ) -> list[IncidentRow]:
     stmt: Select[tuple[IncidentRow]] = select(IncidentRow).order_by(IncidentRow.created_at.desc())
     if behaviour:
@@ -95,7 +96,7 @@ def list_incidents(
     if video_id:
         stmt = stmt.where(IncidentRow.video_id == video_id)
     rows = list(session.scalars(stmt))
-    if loading_bay or start or end:
+    if loading_bay or start or end or camera_id:
         rows = [
             row
             for row in rows
@@ -105,6 +106,8 @@ def list_incidents(
                 bay=loading_bay,
                 start=start,
                 end=end,
+                camera_id=camera_id,
+                row_camera_id=row.camera_id,
             )
         ]
     return rows
@@ -143,6 +146,23 @@ def patch_incident(
     session.commit()
     session.refresh(row)
     return row
+
+
+def review_response_pairs(session: Session) -> list[tuple[datetime, datetime]]:
+    incidents = list(session.scalars(select(IncidentRow)))
+    reviews = list(session.scalars(select(ReviewRow)))
+    first_review: dict[str, datetime] = {}
+    for review in reviews:
+        current = first_review.get(review.incident_id)
+        if current is None or review.created_at < current:
+            first_review[review.incident_id] = review.created_at
+    pairs: list[tuple[datetime, datetime]] = []
+    for incident in incidents:
+        reviewed_at = first_review.get(incident.id)
+        if reviewed_at is None or incident.created_at is None:
+            continue
+        pairs.append((incident.created_at, reviewed_at))
+    return pairs
 
 
 def analytics_summary(session: Session) -> dict[str, Any]:
