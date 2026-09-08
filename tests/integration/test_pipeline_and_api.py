@@ -135,6 +135,10 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert cam.status_code == 200
     assert any("fixed" in rule.lower() for rule in cam.json()["rules"])
     assert cam.json()["webcam"]["live"] is True
+    assert cam.json()["rtsp"]["source_type"] == "rtsp"
+
+    cards = client.get("/api/behaviours/cards")
+    assert len(cards.json()) == 12
 
     by_bay = client.get("/api/incidents", params={"loading_bay": "Bay-A"})
     assert by_bay.status_code == 200

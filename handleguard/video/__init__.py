@@ -4,7 +4,7 @@ from handleguard.video.clip_writer import write_clip_sidecar
 from handleguard.video.overlay import OverlayBox, OverlayPlan, plan_overlay
 from handleguard.video.reader import VideoSource
 from handleguard.video.sampler import sample_timestamps
-from handleguard.video.stream import WebcamSource
+from handleguard.video.stream import RtspSource, WebcamSource
 
 __all__ = [
     "AnnotationRecord",
@@ -13,6 +13,7 @@ __all__ = [
     "OverlayBox",
     "OverlayPlan",
     "VideoSource",
+    "RtspSource",
     "WebcamSource",
     "camera_guidance",
     "parse_annotation",

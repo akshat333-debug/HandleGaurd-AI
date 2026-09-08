@@ -30,3 +30,5 @@
 - [x] Webcam source stub (unbound; tests never open a device)
 - [x] Incident filters by loading bay and created-at range
 - [x] Shift KPIs: high-risk per 100 actions, false-positive rate
+- [x] Model cards for all 12 behaviours
+- [x] RTSP source stub (unbound; tests never open a socket)

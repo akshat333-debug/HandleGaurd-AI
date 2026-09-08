@@ -54,7 +54,7 @@ from handleguard.video.camera import camera_guidance
 from handleguard.video.clip_writer import write_clip_sidecar
 from handleguard.incidents.clips import plan_clip
 from handleguard.video.overlay import OverlayBox, plan_overlay
-from handleguard.video.stream import WebcamSource
+from handleguard.video.stream import RtspSource, WebcamSource
 from handleguard.logging import log_event
 from handleguard.observability import OBS, snapshot
 from handleguard.pipeline import HandleGuardPipeline
@@ -192,7 +192,8 @@ def health() -> dict[str, str]:
 def camera_guide() -> dict[str, object]:
     guide = camera_guidance()
     webcam = WebcamSource()
-    return {"rules": guide.rules, "webcam": webcam.describe()}
+    rtsp = RtspSource("rtsp://camera.local/stream")
+    return {"rules": guide.rules, "webcam": webcam.describe(), "rtsp": rtsp.describe()}
 
 
 @APP.get("/api/observability")

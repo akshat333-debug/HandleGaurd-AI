@@ -23,3 +23,25 @@ class WebcamSource:
 
     def close(self) -> None:
         self.opened = False
+
+
+class RtspSource:
+    """Optional live RTSP source. Tests never open a socket."""
+
+    def __init__(self, url: str):
+        self.url = url
+        self.opened = False
+
+    def describe(self) -> dict[str, Any]:
+        return {"source_type": "rtsp", "url": self.url, "live": True, "opened": self.opened}
+
+    def open(self) -> None:
+        raise RuntimeError("RTSP source is not bound")
+
+    def read(self):
+        if not self.opened:
+            raise RuntimeError("RTSP source is not bound")
+        return None
+
+    def close(self) -> None:
+        self.opened = False

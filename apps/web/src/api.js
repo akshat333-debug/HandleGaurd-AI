@@ -29,6 +29,7 @@ export const api = {
   patchIncident: (id, body) =>
     request(`/api/incidents/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   summary: () => request("/api/analytics/summary"),
+  shift: () => request("/api/analytics/shift"),
   assistant: (question) =>
     request("/api/assistant/query", { method: "POST", body: JSON.stringify({ question }) }),
   behaviours: () => request("/api/config/behaviours"),

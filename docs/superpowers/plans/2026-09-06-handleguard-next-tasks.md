@@ -68,4 +68,9 @@
 29. Filter incidents by loading bay and created-at range
 30. Shift KPI: high-risk per 100 handling actions + FP rate
 
+### Batch K — Cards + RTSP stub (P1/P2) — done
+31. Specific model cards for all 12 behaviours
+32. RtspSource stub (not bound in tests)
+33. Dashboard shift KPI panel
+
 ---
