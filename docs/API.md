@@ -14,6 +14,8 @@ Base path: `/api`
 | GET | `/incidents/{id}` | Detail |
 | PATCH | `/incidents/{id}` | Review workflow |
 | GET | `/incidents/{id}/clip` | Clip metadata |
+| GET | `/incidents/{id}/report` | JSON or `?fmt=markdown` export |
+| GET | `/observability` | FPS, latency, incident/error counts |
 | GET | `/analytics/summary` | Counts |
 | GET | `/analytics/behaviours` | Behaviour histogram |
 | GET | `/analytics/risk` | Risk bands |

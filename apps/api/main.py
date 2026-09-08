@@ -40,6 +40,7 @@ from handleguard.db.repositories import (
 )
 from handleguard.db.session import get_session, init_db
 from handleguard.demo import DEMO_TIMELINE, demo_timestamps
+from handleguard.incidents.reports import incident_report_json, incident_report_markdown
 from handleguard.logging import log_event
 from handleguard.observability import OBS, snapshot
 from handleguard.pipeline import HandleGuardPipeline
@@ -300,6 +301,21 @@ def incident_patch(
     if row is None:
         raise HTTPException(status_code=404, detail="Incident not found")
     return _incident_out(row)
+
+
+@APP.get("/api/incidents/{incident_id}/report")
+def incident_report(
+    incident_id: str,
+    fmt: str = Query("json"),
+    session: Session = Depends(db_session),
+) -> dict[str, Any] | str:
+    row = get_incident(session, incident_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    incident = _row_to_incident(row)
+    if fmt == "markdown":
+        return {"incident_id": incident.incident_id, "markdown": incident_report_markdown(incident)}
+    return incident_report_json(incident)
 
 
 @APP.get("/api/incidents/{incident_id}/clip")

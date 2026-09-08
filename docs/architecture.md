@@ -24,10 +24,14 @@ HandleGuard is a layered monorepo. Each package has one job and talks through ty
 | `handleguard/events` | Temporal event graph |
 | `handleguard/behaviours` | 12 detectors |
 | `handleguard/risk` | Separate risk vs confidence |
-| `handleguard/incidents` | Dedup, explain, recommend |
+| `handleguard/incidents` | Dedup, explain, recommend, JSON/Markdown reports |
 | `handleguard/pipeline` | Orchestration |
 | `handleguard/db` | Models + repositories |
 | `handleguard/assistant` | Grounded Q&A + guardrails |
+| `handleguard/metrics` | Precision/recall/F1, event IoU, latency |
+| `handleguard/security` | Upload type/size/name checks |
+| `handleguard/observability` | FPS, latency, incident/error counters |
+| `handleguard/privacy` | Policy + identity-key redaction |
 | `apps/api` | FastAPI |
 | `apps/web` | Supervisor UI |
 

@@ -34,7 +34,7 @@
 9. Observability snapshot endpoint
 10. Typed pipeline errors (unsupported video, empty detections)
 
-### Batch D — Reports + privacy hooks (P1)
+### Batch D — Reports + privacy hooks (P1) — done
 11. Incident JSON/Markdown report export
 12. Identity-redaction helper
 13. Docs + checklist update

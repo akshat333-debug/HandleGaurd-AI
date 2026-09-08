@@ -131,6 +131,13 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert "fps" in obs.json()
     assert obs.json()["incidents"] >= 1
 
+    report = client.get(f"/api/incidents/{first['id']}/report")
+    assert report.status_code == 200
+    body = report.json()
+    assert body["incident_id"] == first["id"]
+    assert "disclaimer" in body
+    assert "worker_name" not in body.get("evidence", {})
+
 
 def test_upload_rejects_bad_type(client):
     res = client.post(

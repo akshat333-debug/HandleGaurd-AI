@@ -10,3 +10,7 @@
 - [x] Unit tests (geometry, tracker, behaviours, risk, assistant)
 - [x] Integration tests (drop vs gentle, demo timeline, API workflow)
 - [x] README, architecture, API, privacy, risk model
+- [x] Evidence clip planner (3s pre / 4s post)
+- [x] Evaluation metrics (P/R/F1, temporal IoU, latency p50/p95)
+- [x] Structured logs, upload validation, observability endpoint
+- [x] Exportable incident report with identity redaction

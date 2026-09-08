@@ -40,6 +40,8 @@ Perception is injected. Unit and integration tests never require a GPU or YOLO w
 - Analytics by behaviour, risk band, and loading bay
 - Tool-grounded assistant with identity / damage / punitive guardrails
 - Privacy-by-design: no worker identity, no face recognition
+- Evidence clip planner (3s pre / 4s post) and exportable incident reports
+- Structured logs, upload validation, observability snapshot
 
 ## Behaviours
 
@@ -106,7 +108,7 @@ docker compose up --build
 python -m pytest tests -q
 ```
 
-Unit tests cover geometry, kinematics, config, tracker, 12 behaviours, risk bands, dedup, explanations, and assistant guardrails. Integration tests cover drop vs gentle placement, the demo timeline, and the API path `video → process → incident → review → analytics → assistant`.
+Unit tests cover geometry, kinematics, config, tracker, 12 behaviours, risk bands, dedup, explanations, reports, identity redaction, and assistant guardrails. Integration tests cover drop vs gentle placement, the demo timeline, and the API path `video → process → incident → review → report → analytics → assistant`.
 
 ## Dataset
 
@@ -118,7 +120,7 @@ Default perception is `StubDetector` (deterministic). Production can bind Ultral
 
 ## Evaluation
 
-Behaviour detectors are tested with expected input/output fixtures (true drop vs gentle placement, drag vs carry, persistent vs transient zone dwell, assistant refusal cases). Risk and confidence are asserted as separate numbers.
+Behaviour detectors are tested with expected input/output fixtures (true drop vs gentle placement, drag vs carry, persistent vs transient zone dwell, assistant refusal cases). Risk and confidence are asserted as separate numbers. Metrics helpers compute detection P/R/F1, event temporal IoU, and latency mean/p50/p95.
 
 ## Responsible AI
 

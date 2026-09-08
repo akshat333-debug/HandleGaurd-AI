@@ -9,3 +9,5 @@ HandleGuard analyses handling behaviour, not people.
 - Optional face blur when OpenCV is available
 - Retention defaults: full video 7 days, incident clips 30 days
 - Assistant refuses identity, confirmed-damage, and punitive prompts
+- `redact_identity()` strips `worker_name`, `employee_id`, `face_id` and similar keys from reports
+- Incident exports include an explicit "not confirmed damage / no worker identity" disclaimer
