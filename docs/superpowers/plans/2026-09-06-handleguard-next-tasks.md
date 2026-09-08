@@ -49,4 +49,9 @@
 18. Face-blur passthrough hook
 19. Write clip sidecar on video process
 
+### Batch G — Evaluation extras (P1) — done
+20. mAP@0.50 from IoU-matched boxes
+21. Leakage-safe session split (70/15/15 by recording session)
+22. Overlay plan + false-positive error cards + labelled avoided-loss
+
 ---

@@ -43,9 +43,12 @@ from handleguard.demo import DEMO_TIMELINE, demo_timestamps
 from handleguard.incidents.reports import incident_report_json, incident_report_markdown
 from handleguard.metrics.ablation import run_ablation
 from handleguard.metrics.behaviour import EventInterval
+from handleguard.metrics.error_cards import error_card
 from handleguard.metrics.feedback import ReviewLabel, feedback_metrics
+from handleguard.metrics.impact import estimated_avoided_loss
 from handleguard.video.clip_writer import write_clip_sidecar
 from handleguard.incidents.clips import plan_clip
+from handleguard.video.overlay import OverlayBox, plan_overlay
 from handleguard.logging import log_event
 from handleguard.observability import OBS, snapshot
 from handleguard.pipeline import HandleGuardPipeline
@@ -338,12 +341,67 @@ def incident_clip(incident_id: str, session: Session = Depends(db_session)) -> d
     row = get_incident(session, incident_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Incident not found")
+    overlay = plan_overlay(
+        timestamp=row.start_time,
+        boxes=[
+            OverlayBox(
+                row.primary_object_track or "object",
+                "product",
+                (0.0, 0.0, 0.0, 0.0),
+                row.behaviour,
+            )
+        ],
+        risk_score=row.risk_score,
+        behaviour=row.behaviour,
+    )
     return {
         "incident_id": row.id,
         "clip_path": row.clip_path,
         "start_time": max(0.0, row.start_time - 3),
         "end_time": row.end_time + 4,
+        "overlay": {"caption": overlay.caption, "timestamp": overlay.timestamp},
         "message": "Clip metadata ready. Bind a media encoder in production.",
+    }
+
+
+@APP.get("/api/metrics/impact")
+def metrics_impact(session: Session = Depends(db_session)) -> dict[str, Any]:
+    summary = analytics_summary(session)
+    high = summary["by_level"].get("High", 0) + summary["by_level"].get("Critical", 0)
+    loss = estimated_avoided_loss(n_preventable=high, p_damage=0.2, cost=50.0)
+    return {
+        "preventable_high_risk_events": high,
+        "estimated_avoided_loss": loss.value,
+        "assumption": loss.assumption_label,
+    }
+
+
+@APP.get("/api/metrics/errors")
+def metrics_errors(session: Session = Depends(db_session)) -> dict[str, Any]:
+    rows = list_incidents(session, status="FALSE_POSITIVE")
+    cards = [
+        error_card(
+            incident_id=row.id,
+            behaviour=row.behaviour,
+            trigger=row.explanation,
+            rejection=row.supervisor_note or "marked false positive",
+            signal="review",
+        )
+        for row in rows
+    ]
+    return {
+        "count": len(cards),
+        "cards": [
+            {
+                "incident_id": card.incident_id,
+                "behaviour": card.behaviour,
+                "category": card.category,
+                "why_system_triggered": card.why_system_triggered,
+                "why_human_rejected": card.why_human_rejected,
+                "fix": card.fix,
+            }
+            for card in cards
+        ],
     }
 
 

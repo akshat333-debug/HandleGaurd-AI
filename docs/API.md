@@ -18,6 +18,8 @@ Base path: `/api`
 | GET | `/observability` | FPS, latency, incident/error counts |
 | GET | `/metrics/ablation` | Full vs no-tracking vs no-event-graph F1 |
 | GET | `/metrics/feedback` | Supervisor confirm / false-positive precision |
+| GET | `/metrics/impact` | Assumed avoided-loss opportunity (labelled) |
+| GET | `/metrics/errors` | False-positive error cards |
 | GET | `/analytics/summary` | Counts |
 | GET | `/analytics/behaviours` | Behaviour histogram |
 | GET | `/analytics/risk` | Risk bands |

@@ -122,7 +122,7 @@ Default perception is `StubDetector` (deterministic). Production can bind Ultral
 
 ## Evaluation
 
-Behaviour detectors are tested with expected input/output fixtures (true drop vs gentle placement, drag vs carry, persistent vs transient zone dwell, assistant refusal cases). Risk and confidence are asserted as separate numbers. Metrics helpers compute detection P/R/F1, event temporal IoU, and latency mean/p50/p95.
+Behaviour detectors are tested with expected input/output fixtures (true drop vs gentle placement, drag vs carry, persistent vs transient zone dwell, assistant refusal cases). Risk and confidence are asserted as separate numbers. Metrics helpers compute detection P/R/F1, mAP@0.50, event temporal IoU, latency mean/p50/p95, ablation F1, and labelled avoided-loss opportunity.
 
 ## Responsible AI
 

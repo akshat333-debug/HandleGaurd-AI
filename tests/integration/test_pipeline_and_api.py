@@ -149,6 +149,20 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert "no_tracking" in variants
     assert "f1" in variants["full"]
 
+    impact = client.get("/api/metrics/impact")
+    assert impact.status_code == 200
+    assert "assumption" in impact.json()
+    assert "estimated_avoided_loss" in impact.json()
+
+    errors = client.get("/api/metrics/errors")
+    assert errors.status_code == 200
+    assert "cards" in errors.json()
+
+    clip = client.get(f"/api/incidents/{first['id']}/clip")
+    assert clip.status_code == 200
+    assert "overlay" in clip.json()
+    assert "damage" not in clip.json()["overlay"]["caption"].lower()
+
 
 def test_upload_rejects_bad_type(client):
     res = client.post(

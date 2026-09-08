@@ -19,3 +19,6 @@
 - [x] Clip sidecar JSON when OpenCV encoder is absent
 - [x] Supervisor feedback metrics (confirm vs false positive)
 - [x] Face-blur hook (OpenCV optional, tests never require it)
+- [x] Detection mAP@0.50 helper and leakage-safe session split
+- [x] Overlay caption planner (no damage claims)
+- [x] False-positive error cards and labelled avoided-loss model
