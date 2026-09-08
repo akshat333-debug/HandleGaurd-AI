@@ -11,7 +11,7 @@ Base path: `/api`
 | GET | `/videos` | List |
 | GET | `/videos/{id}` | Detail |
 | POST | `/videos/{id}/process` | Run pipeline |
-| GET | `/incidents` | Filterable list |
+| GET | `/incidents` | Filterable list (`behaviour`, `risk_level`, `status`, `loading_bay`, `start`, `end`) |
 | GET | `/incidents/{id}` | Detail |
 | PATCH | `/incidents/{id}` | Review workflow |
 | GET | `/incidents/{id}/clip` | Clip metadata |
@@ -25,6 +25,7 @@ Base path: `/api`
 | GET | `/analytics/behaviours` | Behaviour histogram |
 | GET | `/analytics/risk` | Risk bands |
 | GET | `/analytics/bays` | Bay histogram |
+| GET | `/analytics/shift` | Shift KPIs (high-risk rate, FP rate) |
 | POST | `/assistant/query` | Grounded question |
 | GET | `/behaviours/cards` | Behaviour model cards |
 | GET/PATCH | `/config/behaviours` | Thresholds |

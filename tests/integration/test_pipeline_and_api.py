@@ -136,6 +136,15 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert any("fixed" in rule.lower() for rule in cam.json()["rules"])
     assert cam.json()["webcam"]["live"] is True
 
+    by_bay = client.get("/api/incidents", params={"loading_bay": "Bay-A"})
+    assert by_bay.status_code == 200
+    assert all(item["loading_bay"] == "Bay-A" for item in by_bay.json())
+
+    shift = client.get("/api/analytics/shift")
+    assert shift.status_code == 200
+    assert "primary_kpi" in shift.json()
+    assert "high_risk_per_100" in shift.json()
+
     zones = client.get("/api/zones")
     assert zones.status_code == 200
     assert len(zones.json()) >= 1

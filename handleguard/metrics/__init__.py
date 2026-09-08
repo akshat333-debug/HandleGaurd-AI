@@ -10,6 +10,7 @@ from handleguard.metrics.detection import (
 )
 from handleguard.metrics.error_cards import ErrorCard, classify_false_positive, error_card
 from handleguard.metrics.impact import AvoidedLoss, estimated_avoided_loss
+from handleguard.metrics.kpis import ShiftKpis, high_risk_per_100, shift_kpis
 from handleguard.metrics.split import ClipRecord, DatasetSplit, leakage_safe_split
 from handleguard.metrics.feedback import FeedbackReport, ReviewLabel, feedback_metrics
 from handleguard.metrics.latency import LatencyStats, summarize_latencies
@@ -28,17 +29,20 @@ __all__ = [
     "LatencyStats",
     "MAPResult",
     "ReviewLabel",
+    "ShiftKpis",
     "classify_false_positive",
     "confusion_counts",
     "error_card",
     "estimated_avoided_loss",
     "evaluate_events",
     "feedback_metrics",
+    "high_risk_per_100",
     "incidents_to_events",
     "leakage_safe_split",
     "mean_average_precision",
     "prf1",
     "run_ablation",
+    "shift_kpis",
     "summarize_latencies",
     "temporal_iou",
 ]

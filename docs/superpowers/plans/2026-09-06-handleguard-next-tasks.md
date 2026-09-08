@@ -64,4 +64,8 @@
 27. Empty detections raise `EmptyDetectionsError`
 28. WebcamSource stub (not bound in tests)
 
+### Batch J — Filters + shift KPIs (P1) — done
+29. Filter incidents by loading bay and created-at range
+30. Shift KPI: high-risk per 100 handling actions + FP rate
+
 ---

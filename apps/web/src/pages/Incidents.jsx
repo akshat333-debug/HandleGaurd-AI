@@ -7,16 +7,18 @@ export default function Incidents() {
   const [behaviour, setBehaviour] = useState("");
   const [risk, setRisk] = useState("");
   const [status, setStatus] = useState("");
+  const [bay, setBay] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     api
-      .incidents({ behaviour, risk_level: risk, status })
+      .incidents({ behaviour, risk_level: risk, status, loading_bay: bay })
       .then(setRows)
       .catch((err) => setError(err.message));
-  }, [behaviour, risk, status]);
+  }, [behaviour, risk, status, bay]);
 
   const behaviours = useMemo(() => [...new Set(rows.map((r) => r.behaviour))], [rows]);
+  const bays = useMemo(() => [...new Set(rows.map((r) => r.loading_bay).filter(Boolean))], [rows]);
 
   return (
     <div className="space-y-4">
@@ -65,6 +67,19 @@ export default function Incidents() {
             <option value="">All</option>
             {["NEW", "CONFIRMED", "FALSE_POSITIVE", "RESOLVED"].map((s) => (
               <option key={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm">
+          Bay
+          <select
+            className="ml-2 min-h-11 rounded border border-slate-300 bg-white px-2"
+            value={bay}
+            onChange={(e) => setBay(e.target.value)}
+          >
+            <option value="">All</option>
+            {bays.map((item) => (
+              <option key={item}>{item}</option>
             ))}
           </select>
         </label>

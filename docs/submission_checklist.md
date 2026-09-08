@@ -28,3 +28,5 @@
 - [x] Camera guidance (fixed, 720p, no fisheye)
 - [x] Empty-detection error when `require_detections=True`
 - [x] Webcam source stub (unbound; tests never open a device)
+- [x] Incident filters by loading bay and created-at range
+- [x] Shift KPIs: high-risk per 100 actions, false-positive rate

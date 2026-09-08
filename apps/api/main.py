@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -48,6 +49,7 @@ from handleguard.metrics.behaviour import EventInterval
 from handleguard.metrics.error_cards import error_card
 from handleguard.metrics.feedback import ReviewLabel, feedback_metrics
 from handleguard.metrics.impact import estimated_avoided_loss
+from handleguard.metrics.kpis import shift_kpis
 from handleguard.video.camera import camera_guidance
 from handleguard.video.clip_writer import write_clip_sidecar
 from handleguard.incidents.clips import plan_clip
@@ -294,14 +296,22 @@ def incidents(
     risk_level: str | None = None,
     status: str | None = None,
     video_id: str | None = None,
+    loading_bay: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
     session: Session = Depends(db_session),
 ) -> list[IncidentOut]:
+    start_dt = datetime.fromisoformat(start) if start else None
+    end_dt = datetime.fromisoformat(end) if end else None
     rows = list_incidents(
         session,
         behaviour=behaviour,
         risk_level=risk_level,
         status=status,
         video_id=video_id,
+        loading_bay=loading_bay,
+        start=start_dt,
+        end=end_dt,
     )
     return [_incident_out(row) for row in rows]
 
@@ -372,6 +382,29 @@ def incident_clip(incident_id: str, session: Session = Depends(db_session)) -> d
         "end_time": row.end_time + 4,
         "overlay": {"caption": overlay.caption, "timestamp": overlay.timestamp},
         "message": "Clip metadata ready. Bind a media encoder in production.",
+    }
+
+
+@APP.get("/api/analytics/shift")
+def analytics_shift(session: Session = Depends(db_session)) -> dict[str, Any]:
+    summary = analytics_summary(session)
+    by_status = summary.get("by_status", {})
+    by_level = summary.get("by_level", {})
+    report = shift_kpis(
+        total_incidents=summary["total"],
+        high_risk=by_level.get("High", 0),
+        critical=by_level.get("Critical", 0),
+        false_positives=by_status.get("FALSE_POSITIVE", 0),
+        confirmed=by_status.get("CONFIRMED", 0),
+        handling_actions=max(summary["total"], 1),
+        mean_response_s=0.0,
+    )
+    return {
+        "high_risk_events": report.high_risk_events,
+        "false_positive_rate": report.false_positive_rate,
+        "high_risk_per_100": report.high_risk_per_100,
+        "mean_response_s": report.mean_response_s,
+        "primary_kpi": report.primary_kpi,
     }
 
 

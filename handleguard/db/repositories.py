@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
+from handleguard.db.filters import incident_matches
 from handleguard.db.models import IncidentRow, ReviewRow, VideoRow, ZoneRow
 from handleguard.types import Incident
 
@@ -80,6 +81,9 @@ def list_incidents(
     risk_level: str | None = None,
     status: str | None = None,
     video_id: str | None = None,
+    loading_bay: str | None = None,
+    start: datetime | None = None,
+    end: datetime | None = None,
 ) -> list[IncidentRow]:
     stmt: Select[tuple[IncidentRow]] = select(IncidentRow).order_by(IncidentRow.created_at.desc())
     if behaviour:
@@ -90,7 +94,20 @@ def list_incidents(
         stmt = stmt.where(IncidentRow.review_status == status)
     if video_id:
         stmt = stmt.where(IncidentRow.video_id == video_id)
-    return list(session.scalars(stmt))
+    rows = list(session.scalars(stmt))
+    if loading_bay or start or end:
+        rows = [
+            row
+            for row in rows
+            if incident_matches(
+                loading_bay=row.loading_bay,
+                created_at=row.created_at,
+                bay=loading_bay,
+                start=start,
+                end=end,
+            )
+        ]
+    return rows
 
 
 def get_incident(session: Session, incident_id: str) -> IncidentRow | None:
