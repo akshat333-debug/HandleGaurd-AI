@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from itertools import count
 
+from datetime import datetime, timezone
+
 from handleguard.config.loader import AppConfig
+from handleguard.incidents.clips import plan_clip
 from handleguard.incidents.deduplication import Deduplicator
 from handleguard.incidents.explain import explain_incident, recommend_action
 from handleguard.risk.scorer import score_risk
@@ -10,9 +13,10 @@ from handleguard.types import BehaviourEvidence, Incident, IncidentStatus, is_pe
 
 
 class IncidentEngine:
-    def __init__(self, config: AppConfig, video_id: str = "unknown"):
+    def __init__(self, config: AppConfig, video_id: str = "unknown", video_duration: float = 12.0):
         self.config = config
         self.video_id = video_id
+        self.video_duration = video_duration
         self.deduplicator = Deduplicator(config)
         self._ids = count(1)
         self.incidents: list[Incident] = []
@@ -59,6 +63,15 @@ class IncidentEngine:
             camera_id=camera_id,
             loading_bay=loading_bay,
         )
+        clip = plan_clip(
+            incident.incident_id,
+            incident.start_time,
+            incident.end_time,
+            self.video_duration,
+            created_at=datetime.now(timezone.utc),
+        )
+        incident.clip_path = f"data/clips/{clip.filename}"
+        incident.thumbnail_path = incident.clip_path.replace(".mp4", ".jpg")
         accepted = self.deduplicator.accept(incident)
         if accepted is None:
             return None

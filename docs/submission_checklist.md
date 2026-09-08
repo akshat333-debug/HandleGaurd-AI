@@ -10,3 +10,27 @@
 - [x] Unit tests (geometry, tracker, behaviours, risk, assistant)
 - [x] Integration tests (drop vs gentle, demo timeline, API workflow)
 - [x] README, architecture, API, privacy, risk model
+- [x] Evidence clip planner (3s pre / 4s post)
+- [x] Evaluation metrics (P/R/F1, temporal IoU, latency p50/p95)
+- [x] Structured logs, upload validation, observability endpoint
+- [x] Exportable incident report with identity redaction
+- [x] Ablation: full vs no-tracking vs no-event-graph
+- [x] YOLO box mapper (unbound by default; tests never load weights)
+- [x] Clip sidecar JSON when OpenCV encoder is absent
+- [x] Supervisor feedback metrics (confirm vs false positive)
+- [x] Face-blur hook (OpenCV optional, tests never require it)
+- [x] Detection mAP@0.50 helper and leakage-safe session split
+- [x] Overlay caption planner (no damage claims)
+- [x] False-positive error cards and labelled avoided-loss model
+- [x] Behaviour annotation JSON parse/serialize
+- [x] Behaviour model cards and product-class aliases
+- [x] Image-space drop calibration (never claims uncalibrated metres)
+- [x] Camera guidance (fixed, 720p, no fisheye)
+- [x] Empty-detection error when `require_detections=True`
+- [x] Webcam source stub (unbound; tests never open a device)
+- [x] Incident filters by loading bay and created-at range
+- [x] Shift KPIs: high-risk per 100 actions, false-positive rate
+- [x] Model cards for all 12 behaviours
+- [x] RTSP source stub (unbound; tests never open a socket)
+- [x] Mean supervisor response time from first review
+- [x] Deterministic demo annotation pack (`GET /api/demo/annotations`)

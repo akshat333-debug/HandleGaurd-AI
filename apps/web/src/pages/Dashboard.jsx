@@ -13,14 +13,16 @@ const LEVEL_COLOR = {
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
+  const [shift, setShift] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([api.summary(), api.incidents()])
-      .then(([s, i]) => {
+    Promise.all([api.summary(), api.incidents(), api.shift()])
+      .then(([s, i, k]) => {
         setSummary(s);
         setIncidents(i.slice(0, 8));
+        setShift(k);
       })
       .catch((err) => setError(err.message));
   }, []);
@@ -81,6 +83,30 @@ export default function Dashboard() {
             {!summary?.by_bay && <li className="text-slate-500">No bay data</li>}
           </ul>
         </div>
+      </section>
+      <section className="rounded-lg border border-slate-200 bg-white p-4 space-y-2">
+        <h2 className="text-sm font-medium">Shift KPIs</h2>
+        <p className="text-sm text-slate-500">{shift?.primary_kpi}</p>
+        <dl className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+          <div>
+            <dt className="text-xs uppercase text-slate-500">High-risk events</dt>
+            <dd className="font-mono text-2xl">{shift?.high_risk_events ?? 0}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase text-slate-500">High-risk / 100 actions</dt>
+            <dd className="font-mono text-2xl">{shift?.high_risk_per_100 ?? 0}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase text-slate-500">False-positive rate</dt>
+            <dd className="font-mono text-2xl">
+              {shift ? (shift.false_positive_rate * 100).toFixed(0) : 0}%
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase text-slate-500">Mean response (s)</dt>
+            <dd className="font-mono text-2xl">{shift?.mean_response_s ?? 0}</dd>
+          </div>
+        </dl>
       </section>
       <section className="rounded-lg border border-slate-200 bg-white">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">

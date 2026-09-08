@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from apps.api.schemas import (
@@ -32,24 +34,47 @@ from handleguard.db.repositories import (
     list_incidents,
     list_videos,
     list_zones,
+    review_response_pairs,
     patch_incident,
     save_incident,
     save_video,
     upsert_zone,
 )
 from handleguard.db.session import get_session, init_db
+from handleguard.behaviours.cards import behaviour_card
+from handleguard.behaviours.registry import build_detectors
 from handleguard.demo import DEMO_TIMELINE, demo_timestamps
+from handleguard.incidents.reports import incident_report_json, incident_report_markdown
+from handleguard.metrics.ablation import run_ablation
+from handleguard.metrics.behaviour import EventInterval
+from handleguard.metrics.error_cards import error_card
+from handleguard.metrics.feedback import ReviewLabel, feedback_metrics
+from handleguard.metrics.impact import estimated_avoided_loss
+from handleguard.demo_pack import demo_annotation_pack
+from handleguard.metrics.kpis import mean_response_seconds, shift_kpis
+from handleguard.video.camera import camera_guidance
+from handleguard.video.clip_writer import write_clip_sidecar
+from handleguard.incidents.clips import plan_clip
+from handleguard.video.overlay import OverlayBox, plan_overlay
+from handleguard.video.stream import RtspSource, WebcamSource
+from handleguard.logging import log_event
+from handleguard.observability import OBS, snapshot
 from handleguard.pipeline import HandleGuardPipeline
+from handleguard.pipeline_errors import HandleGuardError
+from handleguard.security.uploads import UploadRejected, validate_upload
 from handleguard.types import Incident, IncidentStatus, RiskLevel
 
 CONFIG = load_config()
-UPLOAD_DIR = Path(__file__).resolve().parents[2] / "data" / "raw"
+ROOT = Path(__file__).resolve().parents[2]
+UPLOAD_DIR = ROOT / "data" / "raw"
+CLIP_DIR = ROOT / "data" / "clips"
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    CLIP_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
 
@@ -69,6 +94,20 @@ def db_session() -> Session:
         yield session
     finally:
         session.close()
+
+
+@APP.exception_handler(UploadRejected)
+def _upload_rejected(_request: Request, exc: UploadRejected) -> JSONResponse:
+    OBS.record_error()
+    log_event(level="ERROR", module="api", event="upload_rejected", error=str(exc))
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@APP.exception_handler(HandleGuardError)
+def _pipeline_error(_request: Request, exc: HandleGuardError) -> JSONResponse:
+    OBS.record_error()
+    log_event(level="ERROR", module="api", event="pipeline_error", error=str(exc))
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 def _incident_out(row: IncidentRow) -> IncidentOut:
@@ -151,6 +190,24 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "handleguard-ai"}
 
 
+@APP.get("/api/demo/annotations")
+def demo_annotations() -> dict[str, object]:
+    return demo_annotation_pack()
+
+
+@APP.get("/api/camera/guidance")
+def camera_guide() -> dict[str, object]:
+    guide = camera_guidance()
+    webcam = WebcamSource()
+    rtsp = RtspSource("rtsp://camera.local/stream")
+    return {"rules": guide.rules, "webcam": webcam.describe(), "rtsp": rtsp.describe()}
+
+
+@APP.get("/api/observability")
+def observability() -> dict[str, object]:
+    return snapshot(OBS)
+
+
 @APP.post("/api/videos", response_model=VideoOut)
 def create_video(payload: VideoCreate, session: Session = Depends(db_session)) -> VideoOut:
     video_id = f"vid-{uuid4().hex[:8]}"
@@ -173,17 +230,19 @@ async def upload_video(
     camera_id: str = Query("cam-01"),
     session: Session = Depends(db_session),
 ) -> VideoOut:
-    suffix = Path(file.filename or "upload.mp4").suffix.lower()
+    raw = await file.read()
+    max_mb = float(CONFIG.video.get("video", {}).get("max_upload_mb", 200))
     allowed = set(CONFIG.video.get("video", {}).get("allowed_extensions", [".mp4", ".avi", ".mov", ".mkv"]))
-    if suffix not in allowed:
-        raise HTTPException(status_code=400, detail="Unsupported video type")
+    checked = validate_upload(file.filename or "upload.mp4", len(raw), max_mb=max_mb, allowed=allowed)
     video_id = f"vid-{uuid4().hex[:8]}"
-    dest = UPLOAD_DIR / f"{video_id}{suffix}"
-    dest.write_bytes(await file.read())
+    dest = UPLOAD_DIR / f"{video_id}{Path(checked.safe_name).suffix.lower()}"
+    dest.write_bytes(raw)
+    OBS.queued_videos += 1
+    log_event(level="INFO", module="api", event="video_uploaded", video_id=video_id)
     row = save_video(
         session,
         video_id=video_id,
-        filename=file.filename or dest.name,
+        filename=checked.safe_name,
         source_type="upload",
         camera_id=camera_id,
         loading_bay=loading_bay,
@@ -213,12 +272,29 @@ def process_video(video_id: str, session: Session = Depends(db_session)) -> list
     pipeline = HandleGuardPipeline.from_stub(DEMO_TIMELINE, config=CONFIG, video_id=video_id)
     pipeline.camera_id = row.camera_id
     pipeline.loading_bay = row.loading_bay
+    OBS.queued_videos = max(0, OBS.queued_videos - 1)
     result = pipeline.process_timeline(demo_timestamps())
+    OBS.record_frame(latency_ms=1.0 * max(result.frames_processed, 1))
     saved = []
     for incident in result.incidents:
+        plan = plan_clip(
+            incident.incident_id,
+            incident.start_time,
+            incident.end_time,
+            pipeline.engine.video_duration,
+        )
+        write_clip_sidecar(plan, CLIP_DIR)
         saved.append(save_incident(session, incident))
+        OBS.record_incident()
     row.status = "processed"
     session.commit()
+    log_event(
+        level="INFO",
+        module="api",
+        event="video_processed",
+        video_id=video_id,
+        latency_ms=float(result.frames_processed),
+    )
     return [_incident_out(item) for item in saved]
 
 
@@ -228,14 +304,24 @@ def incidents(
     risk_level: str | None = None,
     status: str | None = None,
     video_id: str | None = None,
+    loading_bay: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
+    camera_id: str | None = None,
     session: Session = Depends(db_session),
 ) -> list[IncidentOut]:
+    start_dt = datetime.fromisoformat(start) if start else None
+    end_dt = datetime.fromisoformat(end) if end else None
     rows = list_incidents(
         session,
         behaviour=behaviour,
         risk_level=risk_level,
         status=status,
         video_id=video_id,
+        loading_bay=loading_bay,
+        start=start_dt,
+        end=end_dt,
+        camera_id=camera_id,
     )
     return [_incident_out(row) for row in rows]
 
@@ -266,17 +352,155 @@ def incident_patch(
     return _incident_out(row)
 
 
+@APP.get("/api/incidents/{incident_id}/report")
+def incident_report(
+    incident_id: str,
+    fmt: str = Query("json"),
+    session: Session = Depends(db_session),
+) -> dict[str, Any] | str:
+    row = get_incident(session, incident_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    incident = _row_to_incident(row)
+    if fmt == "markdown":
+        return {"incident_id": incident.incident_id, "markdown": incident_report_markdown(incident)}
+    return incident_report_json(incident)
+
+
 @APP.get("/api/incidents/{incident_id}/clip")
 def incident_clip(incident_id: str, session: Session = Depends(db_session)) -> dict[str, Any]:
     row = get_incident(session, incident_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Incident not found")
+    overlay = plan_overlay(
+        timestamp=row.start_time,
+        boxes=[
+            OverlayBox(
+                row.primary_object_track or "object",
+                "product",
+                (0.0, 0.0, 0.0, 0.0),
+                row.behaviour,
+            )
+        ],
+        risk_score=row.risk_score,
+        behaviour=row.behaviour,
+    )
     return {
         "incident_id": row.id,
         "clip_path": row.clip_path,
         "start_time": max(0.0, row.start_time - 3),
         "end_time": row.end_time + 4,
+        "overlay": {"caption": overlay.caption, "timestamp": overlay.timestamp},
         "message": "Clip metadata ready. Bind a media encoder in production.",
+    }
+
+
+@APP.get("/api/analytics/shift")
+def analytics_shift(session: Session = Depends(db_session)) -> dict[str, Any]:
+    summary = analytics_summary(session)
+    by_status = summary.get("by_status", {})
+    by_level = summary.get("by_level", {})
+    report = shift_kpis(
+        total_incidents=summary["total"],
+        high_risk=by_level.get("High", 0),
+        critical=by_level.get("Critical", 0),
+        false_positives=by_status.get("FALSE_POSITIVE", 0),
+        confirmed=by_status.get("CONFIRMED", 0),
+        handling_actions=max(summary["total"], 1),
+        mean_response_s=mean_response_seconds(review_response_pairs(session)),
+    )
+    return {
+        "high_risk_events": report.high_risk_events,
+        "false_positive_rate": report.false_positive_rate,
+        "high_risk_per_100": report.high_risk_per_100,
+        "mean_response_s": report.mean_response_s,
+        "primary_kpi": report.primary_kpi,
+    }
+
+
+@APP.get("/api/metrics/impact")
+def metrics_impact(session: Session = Depends(db_session)) -> dict[str, Any]:
+    summary = analytics_summary(session)
+    high = summary["by_level"].get("High", 0) + summary["by_level"].get("Critical", 0)
+    loss = estimated_avoided_loss(n_preventable=high, p_damage=0.2, cost=50.0)
+    return {
+        "preventable_high_risk_events": high,
+        "estimated_avoided_loss": loss.value,
+        "assumption": loss.assumption_label,
+    }
+
+
+@APP.get("/api/metrics/errors")
+def metrics_errors(session: Session = Depends(db_session)) -> dict[str, Any]:
+    rows = list_incidents(session, status="FALSE_POSITIVE")
+    cards = [
+        error_card(
+            incident_id=row.id,
+            behaviour=row.behaviour,
+            trigger=row.explanation,
+            rejection=row.supervisor_note or "marked false positive",
+            signal="review",
+        )
+        for row in rows
+    ]
+    return {
+        "count": len(cards),
+        "cards": [
+            {
+                "incident_id": card.incident_id,
+                "behaviour": card.behaviour,
+                "category": card.category,
+                "why_system_triggered": card.why_system_triggered,
+                "why_human_rejected": card.why_human_rejected,
+                "fix": card.fix,
+            }
+            for card in cards
+        ],
+    }
+
+
+@APP.get("/api/metrics/feedback")
+def metrics_feedback(session: Session = Depends(db_session)) -> dict[str, Any]:
+    rows = list_incidents(session)
+    report = feedback_metrics(
+        [ReviewLabel(row.id, row.behaviour, row.review_status) for row in rows]
+    )
+    return {
+        "reviewed": report.reviewed,
+        "confirmed": report.confirmed,
+        "false_positives": report.false_positives,
+        "precision": report.precision,
+        "by_behaviour": {
+            name: {
+                "confirmed": item.confirmed,
+                "false_positives": item.false_positives,
+                "reviewed": item.reviewed,
+            }
+            for name, item in report.by_behaviour.items()
+        },
+    }
+
+
+@APP.get("/api/metrics/ablation")
+def metrics_ablation() -> dict[str, Any]:
+    truths = [
+        EventInterval("drop", 0.5, 2.0),
+        EventInterval("throw", 2.1, 3.1),
+        EventInterval("drag", 3.5, 5.5),
+    ]
+    report = run_ablation(DEMO_TIMELINE, demo_timestamps(), truths, config=CONFIG)
+    return {
+        "variants": {
+            name: {
+                "precision": variant.macro.precision,
+                "recall": variant.macro.recall,
+                "f1": variant.macro.f1,
+                "tp": variant.macro.tp,
+                "fp": variant.macro.fp,
+                "fn": variant.macro.fn,
+            }
+            for name, variant in report.variants.items()
+        }
     }
 
 
@@ -313,6 +537,23 @@ def assistant_query(payload: AssistantQuery, session: Session = Depends(db_sessi
         blocked=reply.blocked,
         intent=reply.intent,
     )
+
+
+@APP.get("/api/behaviours/cards")
+def behaviour_cards() -> dict[str, Any]:
+    names = [detector.name for detector in build_detectors()]
+    return {
+        name: {
+            "name": card.name,
+            "detects": card.detects,
+            "does_not_detect": card.does_not_detect,
+            "failure_conditions": card.failure_conditions,
+            "camera_view": card.camera_view,
+            "minimum_visibility": card.minimum_visibility,
+            "calibration_status": card.calibration_status,
+        }
+        for name, card in ((item, behaviour_card(item)) for item in names)
+    }
 
 
 @APP.get("/api/config/behaviours")

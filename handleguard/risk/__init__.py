@@ -1,3 +1,4 @@
-from handleguard.risk.scorer import RiskResult, score_risk, risk_level_for
+from handleguard.risk.calibration import describe_drop, pixels_to_metres
+from handleguard.risk.scorer import RiskResult, risk_level_for, score_risk
 
-__all__ = ["RiskResult", "score_risk", "risk_level_for"]
+__all__ = ["RiskResult", "describe_drop", "pixels_to_metres", "risk_level_for", "score_risk"]

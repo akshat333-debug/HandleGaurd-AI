@@ -103,6 +103,10 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert patched.status_code == 200
     assert patched.json()["review_status"] == "CONFIRMED"
 
+    feedback = client.get("/api/metrics/feedback")
+    assert feedback.status_code == 200
+    assert feedback.json()["confirmed"] >= 1
+
     summary = client.get("/api/analytics/summary")
     assert summary.status_code == 200
     assert summary.json()["total"] >= 1
@@ -122,6 +126,77 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     behaviours = client.get("/api/config/behaviours")
     assert "drop" in behaviours.json()
 
+    cards = client.get("/api/behaviours/cards")
+    assert cards.status_code == 200
+    assert "drop" in cards.json()
+    assert cards.json()["drop"]["calibration_status"]
+
+    cam = client.get("/api/camera/guidance")
+    assert cam.status_code == 200
+    assert any("fixed" in rule.lower() for rule in cam.json()["rules"])
+    assert cam.json()["webcam"]["live"] is True
+    assert cam.json()["rtsp"]["source_type"] == "rtsp"
+
+    cards = client.get("/api/behaviours/cards")
+    assert len(cards.json()) == 12
+
+    by_bay = client.get("/api/incidents", params={"loading_bay": "Bay-A"})
+    assert by_bay.status_code == 200
+    assert all(item["loading_bay"] == "Bay-A" for item in by_bay.json())
+
+    shift = client.get("/api/analytics/shift")
+    assert shift.status_code == 200
+    assert "primary_kpi" in shift.json()
+    assert "high_risk_per_100" in shift.json()
+    assert "mean_response_s" in shift.json()
+
+    demo = client.get("/api/demo/annotations")
+    assert demo.status_code == 200
+    assert demo.json()["video_id"] == "demo"
+    assert len(demo.json()["events"]) >= 8
+
     zones = client.get("/api/zones")
     assert zones.status_code == 200
     assert len(zones.json()) >= 1
+
+    obs = client.get("/api/observability")
+    assert obs.status_code == 200
+    assert "fps" in obs.json()
+    assert obs.json()["incidents"] >= 1
+
+    report = client.get(f"/api/incidents/{first['id']}/report")
+    assert report.status_code == 200
+    body = report.json()
+    assert body["incident_id"] == first["id"]
+    assert "disclaimer" in body
+    assert "worker_name" not in body.get("evidence", {})
+
+    ablation = client.get("/api/metrics/ablation")
+    assert ablation.status_code == 200
+    variants = ablation.json()["variants"]
+    assert "full" in variants
+    assert "no_tracking" in variants
+    assert "f1" in variants["full"]
+
+    impact = client.get("/api/metrics/impact")
+    assert impact.status_code == 200
+    assert "assumption" in impact.json()
+    assert "estimated_avoided_loss" in impact.json()
+
+    errors = client.get("/api/metrics/errors")
+    assert errors.status_code == 200
+    assert "cards" in errors.json()
+
+    clip = client.get(f"/api/incidents/{first['id']}/clip")
+    assert clip.status_code == 200
+    assert "overlay" in clip.json()
+    assert "damage" not in clip.json()["overlay"]["caption"].lower()
+
+
+def test_upload_rejects_bad_type(client):
+    res = client.post(
+        "/api/videos/upload",
+        files={"file": ("notes.exe", b"not-a-video", "application/octet-stream")},
+    )
+    assert res.status_code == 400
+    assert "Unsupported" in res.json()["detail"]
