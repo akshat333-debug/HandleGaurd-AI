@@ -5,10 +5,11 @@ from dataclasses import dataclass, field
 from handleguard.behaviours.base import BehaviourContext
 from handleguard.behaviours.registry import build_detectors
 from handleguard.config.loader import AppConfig, load_config
-from handleguard.events.graph import build_event_graph
+from handleguard.events.graph import EventGraph, build_event_graph
 from handleguard.features.zones import load_zones, resolve_zone
 from handleguard.incidents.manager import IncidentEngine
 from handleguard.perception.detector import Detector, StubDetector
+from handleguard.tracking.passthrough import FrameLocalTracker
 from handleguard.tracking.tracker import IoUTracker
 from handleguard.types import Detection, Incident, TrackState, Zone
 
@@ -28,12 +29,16 @@ class HandleGuardPipeline:
     video_id: str = "video-1"
     camera_id: str = "cam-01"
     loading_bay: str | None = "Bay-A"
-    tracker: IoUTracker = field(default_factory=IoUTracker)
+    tracker: IoUTracker | FrameLocalTracker = field(default_factory=IoUTracker)
     zones: list[Zone] = field(default_factory=list)
+    use_tracker: bool = True
+    use_event_graph: bool = True
 
     def __post_init__(self) -> None:
         if not self.zones:
             self.zones = load_zones(self.config.zones)
+        if not self.use_tracker:
+            self.tracker = FrameLocalTracker()
         self.detectors = build_detectors()
         self.engine = IncidentEngine(self.config, video_id=self.video_id)
 
@@ -44,11 +49,15 @@ class HandleGuardPipeline:
         *,
         config: AppConfig | None = None,
         video_id: str = "video-1",
+        use_tracker: bool = True,
+        use_event_graph: bool = True,
     ) -> "HandleGuardPipeline":
         return cls(
             config=config or load_config(),
             detector=StubDetector(timeline),
             video_id=video_id,
+            use_tracker=use_tracker,
+            use_event_graph=use_event_graph,
         )
 
     def process_frame(self, frame: object, timestamp: float, frame_height: float = 720) -> list[Incident]:
@@ -57,7 +66,10 @@ class HandleGuardPipeline:
         for track in tracks:
             zone = resolve_zone(track.bbox, self.zones)
             track.zone = zone.name if zone else None
-        graph = build_event_graph(tracks, timestamp)
+        if self.use_event_graph:
+            graph = build_event_graph(tracks, timestamp)
+        else:
+            graph = EventGraph(timestamp=timestamp, tracks={t.track_id: t for t in tracks})
         context = BehaviourContext(
             timestamp=timestamp,
             tracks=tracks,

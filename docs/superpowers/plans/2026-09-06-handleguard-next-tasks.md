@@ -39,4 +39,9 @@
 12. Identity-redaction helper
 13. Docs + checklist update
 
+### Batch E — Ablation + adapters (P1) — done
+14. Ablation runner: full vs no-tracking vs no-event-graph
+15. YOLO box mapper (`YOLODetector` unbound by default)
+16. Clip sidecar JSON writer + retention expiry helper
+
 ---

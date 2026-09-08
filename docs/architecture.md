@@ -19,7 +19,7 @@ HandleGuard is a layered monorepo. Each package has one job and talks through ty
 |---|---|
 | `handleguard/config` | YAML loaders |
 | `handleguard/features` | Geometry, kinematics, zones |
-| `handleguard/perception` | Detector protocol + stub |
+| `handleguard/perception` | Detector protocol + stub + YOLO box mapper |
 | `handleguard/tracking` | Greedy IoU tracker |
 | `handleguard/events` | Temporal event graph |
 | `handleguard/behaviours` | 12 detectors |
@@ -28,10 +28,10 @@ HandleGuard is a layered monorepo. Each package has one job and talks through ty
 | `handleguard/pipeline` | Orchestration |
 | `handleguard/db` | Models + repositories |
 | `handleguard/assistant` | Grounded Q&A + guardrails |
-| `handleguard/metrics` | Precision/recall/F1, event IoU, latency |
+| `handleguard/metrics` | Precision/recall/F1, event IoU, latency, ablation |
 | `handleguard/security` | Upload type/size/name checks |
 | `handleguard/observability` | FPS, latency, incident/error counters |
-| `handleguard/privacy` | Policy + identity-key redaction |
+| `handleguard/privacy` | Policy + identity-key redaction + retention expiry |
 | `apps/api` | FastAPI |
 | `apps/web` | Supervisor UI |
 

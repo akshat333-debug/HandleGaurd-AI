@@ -42,6 +42,8 @@ Perception is injected. Unit and integration tests never require a GPU or YOLO w
 - Privacy-by-design: no worker identity, no face recognition
 - Evidence clip planner (3s pre / 4s post) and exportable incident reports
 - Structured logs, upload validation, observability snapshot
+- Ablation study (full vs no-tracking vs no-event-graph)
+- YOLO box mapper behind the same Detector protocol (unbound in tests)
 
 ## Behaviours
 

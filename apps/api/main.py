@@ -41,6 +41,8 @@ from handleguard.db.repositories import (
 from handleguard.db.session import get_session, init_db
 from handleguard.demo import DEMO_TIMELINE, demo_timestamps
 from handleguard.incidents.reports import incident_report_json, incident_report_markdown
+from handleguard.metrics.ablation import run_ablation
+from handleguard.metrics.behaviour import EventInterval
 from handleguard.logging import log_event
 from handleguard.observability import OBS, snapshot
 from handleguard.pipeline import HandleGuardPipeline
@@ -329,6 +331,29 @@ def incident_clip(incident_id: str, session: Session = Depends(db_session)) -> d
         "start_time": max(0.0, row.start_time - 3),
         "end_time": row.end_time + 4,
         "message": "Clip metadata ready. Bind a media encoder in production.",
+    }
+
+
+@APP.get("/api/metrics/ablation")
+def metrics_ablation() -> dict[str, Any]:
+    truths = [
+        EventInterval("drop", 0.5, 2.0),
+        EventInterval("throw", 2.1, 3.1),
+        EventInterval("drag", 3.5, 5.5),
+    ]
+    report = run_ablation(DEMO_TIMELINE, demo_timestamps(), truths, config=CONFIG)
+    return {
+        "variants": {
+            name: {
+                "precision": variant.macro.precision,
+                "recall": variant.macro.recall,
+                "f1": variant.macro.f1,
+                "tp": variant.macro.tp,
+                "fp": variant.macro.fp,
+                "fn": variant.macro.fn,
+            }
+            for name, variant in report.variants.items()
+        }
     }
 
 

@@ -138,6 +138,13 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert "disclaimer" in body
     assert "worker_name" not in body.get("evidence", {})
 
+    ablation = client.get("/api/metrics/ablation")
+    assert ablation.status_code == 200
+    variants = ablation.json()["variants"]
+    assert "full" in variants
+    assert "no_tracking" in variants
+    assert "f1" in variants["full"]
+
 
 def test_upload_rejects_bad_type(client):
     res = client.post(

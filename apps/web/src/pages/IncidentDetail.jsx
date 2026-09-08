@@ -19,6 +19,27 @@ export default function IncidentDetail() {
       .catch((err) => setError(err.message));
   }, [id]);
 
+  async function downloadReport(fmt) {
+    setBusy(true);
+    try {
+      const report = await api.incidentReport(id, fmt);
+      const blob = new Blob(
+        [fmt === "markdown" ? report.markdown : JSON.stringify(report, null, 2)],
+        { type: fmt === "markdown" ? "text/markdown" : "application/json" }
+      );
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${id}.${fmt === "markdown" ? "md" : "json"}`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function review(review_status) {
     setBusy(true);
     try {
@@ -97,6 +118,20 @@ export default function IncidentDetail() {
             className="min-h-11 cursor-pointer rounded border border-slate-300 px-4 text-sm"
           >
             Resolve
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => downloadReport("json")}
+            className="min-h-11 cursor-pointer rounded border border-slate-300 px-4 text-sm"
+          >
+            Export JSON
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => downloadReport("markdown")}
+            className="min-h-11 cursor-pointer rounded border border-slate-300 px-4 text-sm"
+          >
+            Export Markdown
           </button>
         </div>
         {error && (

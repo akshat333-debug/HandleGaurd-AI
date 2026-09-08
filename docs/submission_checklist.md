@@ -14,3 +14,6 @@
 - [x] Evaluation metrics (P/R/F1, temporal IoU, latency p50/p95)
 - [x] Structured logs, upload validation, observability endpoint
 - [x] Exportable incident report with identity redaction
+- [x] Ablation: full vs no-tracking vs no-event-graph
+- [x] YOLO box mapper (unbound by default; tests never load weights)
+- [x] Clip sidecar JSON when OpenCV encoder is absent
