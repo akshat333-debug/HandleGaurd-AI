@@ -54,4 +54,9 @@
 21. Leakage-safe session split (70/15/15 by recording session)
 22. Overlay plan + false-positive error cards + labelled avoided-loss
 
+### Batch H — Annotations + model cards (P1) — done
+23. Behaviour annotation JSON parse/serialize
+24. Product-class aliases (`box`→`carton`, `pallet_truck`→`pallet_jack`)
+25. Behaviour model cards + labelled image-space calibration
+
 ---

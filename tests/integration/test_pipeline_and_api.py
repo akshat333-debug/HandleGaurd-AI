@@ -126,6 +126,11 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     behaviours = client.get("/api/config/behaviours")
     assert "drop" in behaviours.json()
 
+    cards = client.get("/api/behaviours/cards")
+    assert cards.status_code == 200
+    assert "drop" in cards.json()
+    assert cards.json()["drop"]["calibration_status"]
+
     zones = client.get("/api/zones")
     assert zones.status_code == 200
     assert len(zones.json()) >= 1

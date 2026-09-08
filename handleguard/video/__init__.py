@@ -1,13 +1,18 @@
+from handleguard.video.annotations import AnnotationRecord, BehaviourEvent, parse_annotation, serialize_annotation
 from handleguard.video.clip_writer import write_clip_sidecar
 from handleguard.video.overlay import OverlayBox, OverlayPlan, plan_overlay
 from handleguard.video.reader import VideoSource
 from handleguard.video.sampler import sample_timestamps
 
 __all__ = [
+    "AnnotationRecord",
+    "BehaviourEvent",
     "OverlayBox",
     "OverlayPlan",
     "VideoSource",
+    "parse_annotation",
     "plan_overlay",
     "sample_timestamps",
+    "serialize_annotation",
     "write_clip_sidecar",
 ]

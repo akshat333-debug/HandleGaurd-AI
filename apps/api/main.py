@@ -39,6 +39,8 @@ from handleguard.db.repositories import (
     upsert_zone,
 )
 from handleguard.db.session import get_session, init_db
+from handleguard.behaviours.cards import behaviour_card
+from handleguard.behaviours.registry import build_detectors
 from handleguard.demo import DEMO_TIMELINE, demo_timestamps
 from handleguard.incidents.reports import incident_report_json, incident_report_markdown
 from handleguard.metrics.ablation import run_ablation
@@ -483,6 +485,23 @@ def assistant_query(payload: AssistantQuery, session: Session = Depends(db_sessi
         blocked=reply.blocked,
         intent=reply.intent,
     )
+
+
+@APP.get("/api/behaviours/cards")
+def behaviour_cards() -> dict[str, Any]:
+    names = [detector.name for detector in build_detectors()]
+    return {
+        name: {
+            "name": card.name,
+            "detects": card.detects,
+            "does_not_detect": card.does_not_detect,
+            "failure_conditions": card.failure_conditions,
+            "camera_view": card.camera_view,
+            "minimum_visibility": card.minimum_visibility,
+            "calibration_status": card.calibration_status,
+        }
+        for name, card in ((item, behaviour_card(item)) for item in names)
+    }
 
 
 @APP.get("/api/config/behaviours")

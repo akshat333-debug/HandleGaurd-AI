@@ -9,6 +9,7 @@ from handleguard.events.graph import EventGraph, build_event_graph
 from handleguard.features.zones import load_zones, resolve_zone
 from handleguard.incidents.manager import IncidentEngine
 from handleguard.perception.detector import Detector, StubDetector
+from handleguard.perception.products import classify_product
 from handleguard.privacy.blur import blur_faces
 from handleguard.tracking.passthrough import FrameLocalTracker
 from handleguard.tracking.tracker import IoUTracker
@@ -88,7 +89,7 @@ class HandleGuardPipeline:
                 zone = resolve_zone(track.bbox, self.zones) if track else None
                 incident = self.engine.ingest(
                     evidence,
-                    product_class=track.class_name if track else "default",
+                    product_class=classify_product(track.class_name) if track else "default",
                     zone_type=zone.zone_type.value if zone else None,
                     zone_name=zone.name if zone else None,
                     camera_id=self.camera_id,

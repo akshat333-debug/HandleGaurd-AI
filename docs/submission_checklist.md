@@ -22,3 +22,6 @@
 - [x] Detection mAP@0.50 helper and leakage-safe session split
 - [x] Overlay caption planner (no damage claims)
 - [x] False-positive error cards and labelled avoided-loss model
+- [x] Behaviour annotation JSON parse/serialize
+- [x] Behaviour model cards and product-class aliases
+- [x] Image-space drop calibration (never claims uncalibrated metres)

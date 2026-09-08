@@ -25,6 +25,7 @@ Base path: `/api`
 | GET | `/analytics/risk` | Risk bands |
 | GET | `/analytics/bays` | Bay histogram |
 | POST | `/assistant/query` | Grounded question |
+| GET | `/behaviours/cards` | Behaviour model cards |
 | GET/PATCH | `/config/behaviours` | Thresholds |
 | GET/POST/PATCH/DELETE | `/zones` | Zone polygons |
 

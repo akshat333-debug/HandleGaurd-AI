@@ -17,4 +17,6 @@ Bands: 0–24 Low, 25–49 Medium, 50–74 High, 75–100 Critical.
 
 Confidence is `clip(0.35 + 0.65 * evidence.raw_score)` and is displayed independently.
 
+Drop height is an image-space proxy (`91 px vertical drop proxy`) unless `metres_per_pixel` is supplied. Never report a bare "1.00 metre drop" without calibration.
+
 Weights: `configs/risk_weights.yaml`. Product priors: `configs/products.yaml`.
