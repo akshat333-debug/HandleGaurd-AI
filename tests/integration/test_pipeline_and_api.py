@@ -125,3 +125,17 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     zones = client.get("/api/zones")
     assert zones.status_code == 200
     assert len(zones.json()) >= 1
+
+    obs = client.get("/api/observability")
+    assert obs.status_code == 200
+    assert "fps" in obs.json()
+    assert obs.json()["incidents"] >= 1
+
+
+def test_upload_rejects_bad_type(client):
+    res = client.post(
+        "/api/videos/upload",
+        files={"file": ("notes.exe", b"not-a-video", "application/octet-stream")},
+    )
+    assert res.status_code == 400
+    assert "Unsupported" in res.json()["detail"]

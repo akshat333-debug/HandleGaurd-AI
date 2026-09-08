@@ -7,8 +7,9 @@ from uuid import uuid4
 
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from apps.api.schemas import (
@@ -39,7 +40,11 @@ from handleguard.db.repositories import (
 )
 from handleguard.db.session import get_session, init_db
 from handleguard.demo import DEMO_TIMELINE, demo_timestamps
+from handleguard.logging import log_event
+from handleguard.observability import OBS, snapshot
 from handleguard.pipeline import HandleGuardPipeline
+from handleguard.pipeline_errors import HandleGuardError
+from handleguard.security.uploads import UploadRejected, validate_upload
 from handleguard.types import Incident, IncidentStatus, RiskLevel
 
 CONFIG = load_config()
@@ -69,6 +74,20 @@ def db_session() -> Session:
         yield session
     finally:
         session.close()
+
+
+@APP.exception_handler(UploadRejected)
+def _upload_rejected(_request: Request, exc: UploadRejected) -> JSONResponse:
+    OBS.record_error()
+    log_event(level="ERROR", module="api", event="upload_rejected", error=str(exc))
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@APP.exception_handler(HandleGuardError)
+def _pipeline_error(_request: Request, exc: HandleGuardError) -> JSONResponse:
+    OBS.record_error()
+    log_event(level="ERROR", module="api", event="pipeline_error", error=str(exc))
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 def _incident_out(row: IncidentRow) -> IncidentOut:
@@ -151,6 +170,11 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "handleguard-ai"}
 
 
+@APP.get("/api/observability")
+def observability() -> dict[str, object]:
+    return snapshot(OBS)
+
+
 @APP.post("/api/videos", response_model=VideoOut)
 def create_video(payload: VideoCreate, session: Session = Depends(db_session)) -> VideoOut:
     video_id = f"vid-{uuid4().hex[:8]}"
@@ -173,17 +197,19 @@ async def upload_video(
     camera_id: str = Query("cam-01"),
     session: Session = Depends(db_session),
 ) -> VideoOut:
-    suffix = Path(file.filename or "upload.mp4").suffix.lower()
+    raw = await file.read()
+    max_mb = float(CONFIG.video.get("video", {}).get("max_upload_mb", 200))
     allowed = set(CONFIG.video.get("video", {}).get("allowed_extensions", [".mp4", ".avi", ".mov", ".mkv"]))
-    if suffix not in allowed:
-        raise HTTPException(status_code=400, detail="Unsupported video type")
+    checked = validate_upload(file.filename or "upload.mp4", len(raw), max_mb=max_mb, allowed=allowed)
     video_id = f"vid-{uuid4().hex[:8]}"
-    dest = UPLOAD_DIR / f"{video_id}{suffix}"
-    dest.write_bytes(await file.read())
+    dest = UPLOAD_DIR / f"{video_id}{Path(checked.safe_name).suffix.lower()}"
+    dest.write_bytes(raw)
+    OBS.queued_videos += 1
+    log_event(level="INFO", module="api", event="video_uploaded", video_id=video_id)
     row = save_video(
         session,
         video_id=video_id,
-        filename=file.filename or dest.name,
+        filename=checked.safe_name,
         source_type="upload",
         camera_id=camera_id,
         loading_bay=loading_bay,
@@ -213,12 +239,22 @@ def process_video(video_id: str, session: Session = Depends(db_session)) -> list
     pipeline = HandleGuardPipeline.from_stub(DEMO_TIMELINE, config=CONFIG, video_id=video_id)
     pipeline.camera_id = row.camera_id
     pipeline.loading_bay = row.loading_bay
+    OBS.queued_videos = max(0, OBS.queued_videos - 1)
     result = pipeline.process_timeline(demo_timestamps())
+    OBS.record_frame(latency_ms=1.0 * max(result.frames_processed, 1))
     saved = []
     for incident in result.incidents:
         saved.append(save_incident(session, incident))
+        OBS.record_incident()
     row.status = "processed"
     session.commit()
+    log_event(
+        level="INFO",
+        module="api",
+        event="video_processed",
+        video_id=video_id,
+        latency_ms=float(result.frames_processed),
+    )
     return [_incident_out(item) for item in saved]
 
 
