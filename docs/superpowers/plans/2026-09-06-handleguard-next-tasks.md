@@ -44,4 +44,9 @@
 15. YOLO box mapper (`YOLODetector` unbound by default)
 16. Clip sidecar JSON writer + retention expiry helper
 
+### Batch F — Feedback + privacy hooks (P1) — done
+17. Review-label precision (`GET /api/metrics/feedback`)
+18. Face-blur passthrough hook
+19. Write clip sidecar on video process
+
 ---

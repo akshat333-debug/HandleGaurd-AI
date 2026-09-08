@@ -17,6 +17,7 @@ Base path: `/api`
 | GET | `/incidents/{id}/report` | JSON or `?fmt=markdown` export |
 | GET | `/observability` | FPS, latency, incident/error counts |
 | GET | `/metrics/ablation` | Full vs no-tracking vs no-event-graph F1 |
+| GET | `/metrics/feedback` | Supervisor confirm / false-positive precision |
 | GET | `/analytics/summary` | Counts |
 | GET | `/analytics/behaviours` | Behaviour histogram |
 | GET | `/analytics/risk` | Risk bands |

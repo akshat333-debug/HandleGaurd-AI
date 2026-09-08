@@ -9,6 +9,7 @@ from handleguard.events.graph import EventGraph, build_event_graph
 from handleguard.features.zones import load_zones, resolve_zone
 from handleguard.incidents.manager import IncidentEngine
 from handleguard.perception.detector import Detector, StubDetector
+from handleguard.privacy.blur import blur_faces
 from handleguard.tracking.passthrough import FrameLocalTracker
 from handleguard.tracking.tracker import IoUTracker
 from handleguard.types import Detection, Incident, TrackState, Zone
@@ -61,6 +62,7 @@ class HandleGuardPipeline:
         )
 
     def process_frame(self, frame: object, timestamp: float, frame_height: float = 720) -> list[Incident]:
+        frame = blur_faces(frame, enabled=bool(self.config.video.get("privacy", {}).get("blur_faces", True)))
         detections = self.detector.detect(frame, timestamp)
         tracks = self.tracker.update(detections, timestamp)
         for track in tracks:

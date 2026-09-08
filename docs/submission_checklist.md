@@ -17,3 +17,5 @@
 - [x] Ablation: full vs no-tracking vs no-event-graph
 - [x] YOLO box mapper (unbound by default; tests never load weights)
 - [x] Clip sidecar JSON when OpenCV encoder is absent
+- [x] Supervisor feedback metrics (confirm vs false positive)
+- [x] Face-blur hook (OpenCV optional, tests never require it)

@@ -103,6 +103,10 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert patched.status_code == 200
     assert patched.json()["review_status"] == "CONFIRMED"
 
+    feedback = client.get("/api/metrics/feedback")
+    assert feedback.status_code == 200
+    assert feedback.json()["confirmed"] >= 1
+
     summary = client.get("/api/analytics/summary")
     assert summary.status_code == 200
     assert summary.json()["total"] >= 1

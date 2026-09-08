@@ -43,6 +43,9 @@ from handleguard.demo import DEMO_TIMELINE, demo_timestamps
 from handleguard.incidents.reports import incident_report_json, incident_report_markdown
 from handleguard.metrics.ablation import run_ablation
 from handleguard.metrics.behaviour import EventInterval
+from handleguard.metrics.feedback import ReviewLabel, feedback_metrics
+from handleguard.video.clip_writer import write_clip_sidecar
+from handleguard.incidents.clips import plan_clip
 from handleguard.logging import log_event
 from handleguard.observability import OBS, snapshot
 from handleguard.pipeline import HandleGuardPipeline
@@ -51,13 +54,16 @@ from handleguard.security.uploads import UploadRejected, validate_upload
 from handleguard.types import Incident, IncidentStatus, RiskLevel
 
 CONFIG = load_config()
-UPLOAD_DIR = Path(__file__).resolve().parents[2] / "data" / "raw"
+ROOT = Path(__file__).resolve().parents[2]
+UPLOAD_DIR = ROOT / "data" / "raw"
+CLIP_DIR = ROOT / "data" / "clips"
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    CLIP_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
 
@@ -247,6 +253,13 @@ def process_video(video_id: str, session: Session = Depends(db_session)) -> list
     OBS.record_frame(latency_ms=1.0 * max(result.frames_processed, 1))
     saved = []
     for incident in result.incidents:
+        plan = plan_clip(
+            incident.incident_id,
+            incident.start_time,
+            incident.end_time,
+            pipeline.engine.video_duration,
+        )
+        write_clip_sidecar(plan, CLIP_DIR)
         saved.append(save_incident(session, incident))
         OBS.record_incident()
     row.status = "processed"
@@ -331,6 +344,28 @@ def incident_clip(incident_id: str, session: Session = Depends(db_session)) -> d
         "start_time": max(0.0, row.start_time - 3),
         "end_time": row.end_time + 4,
         "message": "Clip metadata ready. Bind a media encoder in production.",
+    }
+
+
+@APP.get("/api/metrics/feedback")
+def metrics_feedback(session: Session = Depends(db_session)) -> dict[str, Any]:
+    rows = list_incidents(session)
+    report = feedback_metrics(
+        [ReviewLabel(row.id, row.behaviour, row.review_status) for row in rows]
+    )
+    return {
+        "reviewed": report.reviewed,
+        "confirmed": report.confirmed,
+        "false_positives": report.false_positives,
+        "precision": report.precision,
+        "by_behaviour": {
+            name: {
+                "confirmed": item.confirmed,
+                "false_positives": item.false_positives,
+                "reviewed": item.reviewed,
+            }
+            for name, item in report.by_behaviour.items()
+        },
     }
 
 
