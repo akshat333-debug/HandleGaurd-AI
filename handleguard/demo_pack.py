@@ -23,3 +23,30 @@ def demo_annotation_pack() -> dict[str, Any]:
 
 
 DEMO_ANNOTATIONS = demo_annotation_pack()
+
+
+def demo_clip_catalog() -> list[dict[str, Any]]:
+    clips = [
+        ("01_drop.mp4", "drop"),
+        ("02_drag.mp4", "drag"),
+        ("03_throw.mp4", "throw"),
+        ("04_bad_stack.mp4", "improper_stack"),
+        ("05_unstable_stack.mp4", "unstable_stack"),
+        ("06_zone_violation.mp4", "zone_violation"),
+        ("07_pallet_overhang.mp4", "pallet_overhang"),
+        ("08_step_on_box.mp4", "stepping"),
+        ("09_manual_heavy_lift.mp4", "improper_manual_handling"),
+        ("10_unsafe_sequence.mp4", "unsafe_sequence"),
+        ("11_normal_handling.mp4", "negative"),
+        ("12_mixed_shift.mp4", "mixed"),
+    ]
+    return [
+        {
+            "filename": name,
+            "behaviour": behaviour,
+            "offline": True,
+            "path": f"demo/{name}",
+        }
+        for name, behaviour in clips
+    ]
+

@@ -48,9 +48,10 @@ from handleguard.incidents.reports import incident_report_json, incident_report_
 from handleguard.metrics.ablation import run_ablation
 from handleguard.metrics.behaviour import EventInterval
 from handleguard.metrics.error_cards import error_card
+from handleguard.metrics.assistant import evaluate_assistant, gold_incidents, gold_query_pack
 from handleguard.metrics.feedback import ReviewLabel, feedback_metrics
 from handleguard.metrics.impact import estimated_avoided_loss
-from handleguard.demo_pack import demo_annotation_pack
+from handleguard.demo_pack import demo_annotation_pack, demo_clip_catalog
 from handleguard.metrics.kpis import mean_response_seconds, shift_kpis
 from handleguard.video.camera import camera_guidance
 from handleguard.video.clip_writer import write_clip_sidecar
@@ -193,6 +194,12 @@ def health() -> dict[str, str]:
 @APP.get("/api/demo/annotations")
 def demo_annotations() -> dict[str, object]:
     return demo_annotation_pack()
+
+
+@APP.get("/api/demo/clips")
+def demo_clips() -> dict[str, object]:
+    clips = demo_clip_catalog()
+    return {"clips": clips, "count": len(clips)}
 
 
 @APP.get("/api/camera/guidance")
@@ -522,6 +529,19 @@ def analytics_risk(session: Session = Depends(db_session)) -> dict[str, int]:
 @APP.get("/api/analytics/bays")
 def analytics_bays(session: Session = Depends(db_session)) -> dict[str, int]:
     return analytics_summary(session)["by_bay"]
+
+
+@APP.get("/api/metrics/assistant")
+def metrics_assistant() -> dict[str, Any]:
+    service = AssistantService(CONFIG, gold_incidents)
+    report = evaluate_assistant(service, gold_query_pack())
+    return {
+        "n_queries": report.n_queries,
+        "passed": report.passed,
+        "grounding_rate": report.grounding_rate,
+        "unsupported_rate": report.unsupported_rate,
+        "pass_rate": report.pass_rate,
+    }
 
 
 @APP.post("/api/assistant/query", response_model=AssistantOut)

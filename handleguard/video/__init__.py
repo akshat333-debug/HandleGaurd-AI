@@ -2,6 +2,7 @@ from handleguard.video.annotations import AnnotationRecord, BehaviourEvent, pars
 from handleguard.video.camera import CameraGuidance, camera_guidance
 from handleguard.video.clip_writer import write_clip_sidecar
 from handleguard.video.overlay import OverlayBox, OverlayPlan, plan_overlay
+from handleguard.video.preprocess import FrameSize, resize_frame
 from handleguard.video.reader import VideoSource
 from handleguard.video.sampler import sample_timestamps
 from handleguard.video.stream import RtspSource, WebcamSource
@@ -10,6 +11,7 @@ __all__ = [
     "AnnotationRecord",
     "BehaviourEvent",
     "CameraGuidance",
+    "FrameSize",
     "OverlayBox",
     "OverlayPlan",
     "VideoSource",
@@ -18,6 +20,7 @@ __all__ = [
     "camera_guidance",
     "parse_annotation",
     "plan_overlay",
+    "resize_frame",
     "sample_timestamps",
     "serialize_annotation",
     "write_clip_sidecar",

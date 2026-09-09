@@ -150,10 +150,20 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert "high_risk_per_100" in shift.json()
     assert "mean_response_s" in shift.json()
 
+    factuality = client.get("/api/metrics/assistant")
+    assert factuality.status_code == 200
+    assert factuality.json()["n_queries"] >= 8
+    assert factuality.json()["pass_rate"] == 1.0
+
     demo = client.get("/api/demo/annotations")
     assert demo.status_code == 200
     assert demo.json()["video_id"] == "demo"
     assert len(demo.json()["events"]) >= 8
+
+    clips = client.get("/api/demo/clips")
+    assert clips.status_code == 200
+    assert clips.json()["count"] == 12
+    assert clips.json()["clips"][0]["offline"] is True
 
     zones = client.get("/api/zones")
     assert zones.status_code == 200

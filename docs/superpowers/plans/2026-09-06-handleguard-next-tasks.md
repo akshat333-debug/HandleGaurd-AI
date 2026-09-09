@@ -78,4 +78,14 @@
 35. Filter incidents by camera_id
 36. Deterministic demo annotation JSON pack
 
+### Batch M — Resize + negatives + demo catalog (P1) — done
+37. Frame resize to YAML `max_resolution` (keep aspect ratio)
+38. Negative-example gentle handling (no critical drop)
+39. Offline 12-clip demo catalog + grounded why-incident assistant path
+
+### Batch N — Assistant factuality (P1) — done
+40. Predetermined query pack
+41. Grounding rate and unsupported-answer rate
+42. `GET /api/metrics/assistant`
+
 ---
