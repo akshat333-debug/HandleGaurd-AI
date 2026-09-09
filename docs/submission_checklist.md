@@ -34,3 +34,7 @@
 - [x] RTSP source stub (unbound; tests never open a socket)
 - [x] Mean supervisor response time from first review
 - [x] Deterministic demo annotation pack (`GET /api/demo/annotations`)
+- [x] Frame resize helper honours `max_resolution` (1280x720)
+- [x] Negative-example gentle-handling timeline (no critical drop)
+- [x] Offline 12-clip demo catalog (`GET /api/demo/clips`)
+- [x] Assistant explains a named incident without identity/damage claims

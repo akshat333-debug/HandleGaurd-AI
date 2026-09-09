@@ -50,7 +50,7 @@ from handleguard.metrics.behaviour import EventInterval
 from handleguard.metrics.error_cards import error_card
 from handleguard.metrics.feedback import ReviewLabel, feedback_metrics
 from handleguard.metrics.impact import estimated_avoided_loss
-from handleguard.demo_pack import demo_annotation_pack
+from handleguard.demo_pack import demo_annotation_pack, demo_clip_catalog
 from handleguard.metrics.kpis import mean_response_seconds, shift_kpis
 from handleguard.video.camera import camera_guidance
 from handleguard.video.clip_writer import write_clip_sidecar
@@ -193,6 +193,12 @@ def health() -> dict[str, str]:
 @APP.get("/api/demo/annotations")
 def demo_annotations() -> dict[str, object]:
     return demo_annotation_pack()
+
+
+@APP.get("/api/demo/clips")
+def demo_clips() -> dict[str, object]:
+    clips = demo_clip_catalog()
+    return {"clips": clips, "count": len(clips)}
 
 
 @APP.get("/api/camera/guidance")

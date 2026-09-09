@@ -53,7 +53,12 @@ class AssistantService:
                 intent="empty",
             )
 
-        if "high-risk" in q or "high risk" in q or "critical" in q:
+        if q.startswith("why") or any(i.incident_id.lower() in q for i in incidents):
+            picked = [i for i in incidents if i.incident_id.lower() in q]
+            if not picked:
+                picked = incidents[:1]
+            intent = "explain"
+        elif "high-risk" in q or "high risk" in q or "critical" in q:
             picked = [i for i in incidents if i.risk_level.value in {"High", "Critical"}]
             intent = "high_risk"
         elif "false positive" in q:
@@ -80,11 +85,6 @@ class AssistantService:
             if not picked:
                 picked = [i for i in incidents if any(_matches(i, token) for token in q.split() if len(token) > 3)]
             intent = "behaviour_filter"
-        elif q.startswith("why") or "incident" in q:
-            picked = [i for i in incidents if i.incident_id.lower() in q]
-            if not picked:
-                picked = incidents[:1]
-            intent = "explain"
         else:
             picked = incidents[:8]
             intent = "summary"

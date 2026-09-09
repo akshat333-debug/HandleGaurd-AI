@@ -155,6 +155,11 @@ def test_video_process_to_incident_review_analytics_assistant(client):
     assert demo.json()["video_id"] == "demo"
     assert len(demo.json()["events"]) >= 8
 
+    clips = client.get("/api/demo/clips")
+    assert clips.status_code == 200
+    assert clips.json()["count"] == 12
+    assert clips.json()["clips"][0]["offline"] is True
+
     zones = client.get("/api/zones")
     assert zones.status_code == 200
     assert len(zones.json()) >= 1

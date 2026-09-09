@@ -7,6 +7,7 @@ Base path: `/api`
 | GET | `/health` | Liveness |
 | GET | `/camera/guidance` | Fixed-camera capture rules + webcam/RTSP stubs |
 | GET | `/demo/annotations` | Deterministic demo behaviour JSON pack |
+| GET | `/demo/clips` | Offline 12-clip catalog (filenames only; no encoded mp4s) |
 | POST | `/videos` | Register video metadata |
 | POST | `/videos/upload` | Upload file |
 | GET | `/videos` | List |
