@@ -38,3 +38,4 @@
 - [x] Negative-example gentle-handling timeline (no critical drop)
 - [x] Offline 12-clip demo catalog (`GET /api/demo/clips`)
 - [x] Assistant explains a named incident without identity/damage claims
+- [x] Assistant factuality pack (grounding rate, unsupported-answer rate)

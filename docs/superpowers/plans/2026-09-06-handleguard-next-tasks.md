@@ -83,4 +83,9 @@
 38. Negative-example gentle handling (no critical drop)
 39. Offline 12-clip demo catalog + grounded why-incident assistant path
 
+### Batch N — Assistant factuality (P1) — done
+40. Predetermined query pack
+41. Grounding rate and unsupported-answer rate
+42. `GET /api/metrics/assistant`
+
 ---

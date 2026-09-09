@@ -23,6 +23,7 @@ Base path: `/api`
 | GET | `/metrics/feedback` | Supervisor confirm / false-positive precision |
 | GET | `/metrics/impact` | Assumed avoided-loss opportunity (labelled) |
 | GET | `/metrics/errors` | False-positive error cards |
+| GET | `/metrics/assistant` | Predetermined-query factuality (grounding / unsupported rates) |
 | GET | `/analytics/summary` | Counts |
 | GET | `/analytics/behaviours` | Behaviour histogram |
 | GET | `/analytics/risk` | Risk bands |

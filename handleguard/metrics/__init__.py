@@ -1,4 +1,11 @@
 from handleguard.metrics.ablation import AblationReport, run_ablation
+from handleguard.metrics.assistant import (
+    FactualityCase,
+    FactualityReport,
+    evaluate_assistant,
+    gold_incidents,
+    gold_query_pack,
+)
 from handleguard.metrics.behaviour import EventInterval, evaluate_events, temporal_iou
 from handleguard.metrics.detection import (
     ClassificationMetrics,
@@ -25,6 +32,8 @@ __all__ = [
     "DetectionBox",
     "ErrorCard",
     "EventInterval",
+    "FactualityCase",
+    "FactualityReport",
     "FeedbackReport",
     "LatencyStats",
     "MAPResult",
@@ -34,8 +43,11 @@ __all__ = [
     "confusion_counts",
     "error_card",
     "estimated_avoided_loss",
+    "evaluate_assistant",
     "evaluate_events",
+    "gold_incidents",
     "feedback_metrics",
+    "gold_query_pack",
     "high_risk_per_100",
     "mean_response_seconds",
     "incidents_to_events",
